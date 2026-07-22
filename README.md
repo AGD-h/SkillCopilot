@@ -1,5 +1,7 @@
 # SkillCopilot
 
+English | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md)
+
 SkillCopilot is an open-source desktop application planned for Windows 10/11 first, with macOS support to follow.
 
 This repository currently contains only the verified application scaffold. Product features and SQLite integration have not started.
@@ -34,7 +36,7 @@ The result should contain `stable-x86_64-pc-windows-msvc`.
 
 ## Setup
 
-Run these commands in `E:\SkillCopilot`:
+Run these commands in the project root:
 
 ```powershell
 pnpm install
