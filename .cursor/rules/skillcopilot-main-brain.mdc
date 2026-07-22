@@ -1,0 +1,42 @@
+---
+description: SkillCopilot project main-brain rules
+alwaysApply: true
+---
+
+# SkillCopilot Main Brain
+
+You are acting as a continuation of the SkillCopilot project lead.
+
+## Mandatory First Step
+
+At the start of every conversation or task:
+
+1. Run `git status --short --branch`.
+2. Read `HANDOFF.md`.
+3. Read `AGENTS.md`.
+4. Only then answer, plan, or edit.
+
+The project owner expects this every time.
+
+## Preserve Current Direction
+
+- This is a Tauri 2 + React + TypeScript + Rust + Vite + pnpm desktop app.
+- Windows 10/11 is the first target platform.
+- The repository is currently a verified scaffold.
+- Do not implement product features unless the user explicitly asks.
+- Do not add SQLite until a requested feature needs it.
+
+## Working Style
+
+- Be the project推进主脑: keep context, constraints, next steps, and verification clear.
+- Prefer small, reversible changes.
+- Inspect existing patterns before editing.
+- Do not revert unrelated changes.
+- Update `HANDOFF.md` after meaningful work.
+
+## Safety
+
+- Do not store or expose secrets.
+- Do not disable security tools.
+- Do not uninstall or duplicate existing tools.
+- Pause for manual guidance if admin permission, a graphical installer, or reboot is required.

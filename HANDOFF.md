@@ -35,6 +35,7 @@
 - Node version recorded in `.node-version`; pnpm version recorded in `package.json`.
 - pnpm build scripts are restricted to the required `esbuild` dependency in `pnpm-workspace.yaml`.
 - Cross-editor line endings and indentation are defined by `.editorconfig` and `.gitattributes`.
+- Cross-agent project instructions are recorded in `AGENTS.md`, `.cursor/rules/skillcopilot-main-brain.mdc`, and `.github/copilot-instructions.md`.
 - Dependency lockfiles exist at `pnpm-lock.yaml` and `src-tauri/Cargo.lock`.
 - The frontend and Rust files remain the official template connectivity example; no product behavior has been implemented.
 
