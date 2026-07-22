@@ -4,7 +4,7 @@
 - Maintain the verified SkillCopilot project scaffold, now published as the public `AGD-h/SkillCopilot` GitHub repository.
 - First target platform: Windows 10/11; keep configuration compatible with later macOS work.
 - Stack: Tauri 2, React, TypeScript, Rust, Vite, pnpm, SQLite later, and Git later.
-- Do not implement product features or add SQLite during this scaffold phase.
+- MVP product definition is recorded at `docs/product/mvp-definition.md` (local AI project main-brain + Skill/Agent manager). Do not add SQLite until Phase 5 evaluation says it is needed.
 
 ## Recommended Development Environment
 - Main development environment: Windows-native PowerShell/CMD.
@@ -58,7 +58,8 @@
 - Public repository: `https://github.com/AGD-h/SkillCopilot`, pushed via authenticated GitHub CLI.
 
 ## Pending Work
-- Replace the official template connectivity example only when product development begins.
+- Implement Phase 1 frontend static shell and mock data per `docs/product/mvp-definition.md`.
+- Replace the official template connectivity example as part of that Phase 1 work.
 - For normal development, open a fresh PowerShell or Cursor terminal so the Rust PATH is loaded.
 
 ## Temporary Validation Project
@@ -80,8 +81,8 @@
 - If an installer requires administrator permission, a graphical installer, or a reboot, pause and give manual instructions.
 
 ## Last Known Next Step
-- Publishing phase is complete. Begin product feature development only when the user requests it.
-- Do not add SQLite until the feature that needs it is being implemented.
+- 根据 MVP 定义实现前端静态壳（Phase 1：四页导航 + mock 数据；见 `docs/product/mvp-definition.md`）。
+- Do not add SQLite until Phase 5 evaluation concludes it is required.
 
 ## Verified Tool Versions
 - Windows: Windows 11/10.0.26200 x64.
