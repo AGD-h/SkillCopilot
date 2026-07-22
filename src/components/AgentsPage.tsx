@@ -1,15 +1,22 @@
 import { useMemo, useState } from "react";
-import type { AgentItem } from "../types";
+import type { AgentItem, ToastState } from "../types";
 
 interface AgentsPageProps {
   agents: AgentItem[];
+  selectedId: string;
+  onSelect: (id: string) => void;
   onCopy: (text: string) => void;
-  toast: string | null;
+  toast: ToastState | null;
 }
 
-export function AgentsPage({ agents, onCopy, toast }: AgentsPageProps) {
+export function AgentsPage({
+  agents,
+  selectedId,
+  onSelect,
+  onCopy,
+  toast,
+}: AgentsPageProps) {
   const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState(agents[0]?.id ?? "");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -28,11 +35,14 @@ export function AgentsPage({ agents, onCopy, toast }: AgentsPageProps) {
   return (
     <div className="page split-page">
       <div className="split-main">
-        <header className="page-header">
+        <header className="page-header compact-header">
           <div className="page-header-text">
             <h1 className="page-title">Agents</h1>
-            <p className="page-subtitle">管理子智能体角色提示词，复制后到外部工具使用。</p>
+            <p className="page-subtitle">
+              管理子智能体角色提示词，复制后到外部工具使用。
+            </p>
           </div>
+          <span className="badge badge-mock">Mock · 6 agents</span>
         </header>
 
         <div className="toolbar">
@@ -59,7 +69,7 @@ export function AgentsPage({ agents, onCopy, toast }: AgentsPageProps) {
                   <button
                     type="button"
                     className={`list-item${active ? " is-selected" : ""}`}
-                    onClick={() => setSelectedId(agent.id)}
+                    onClick={() => onSelect(agent.id)}
                     aria-current={active ? "true" : undefined}
                   >
                     <div className="list-item-top">
@@ -71,7 +81,9 @@ export function AgentsPage({ agents, onCopy, toast }: AgentsPageProps) {
                       <span className="list-item-title">{agent.name}</span>
                     </div>
                     <div className="list-item-desc">{agent.role}</div>
-                    <div className="path-chip">来源：{agent.source}</div>
+                    <div className="path-chip" title={agent.source}>
+                      来源：{agent.source}
+                    </div>
                   </button>
                 </li>
               );
@@ -101,7 +113,9 @@ export function AgentsPage({ agents, onCopy, toast }: AgentsPageProps) {
               </div>
               <div>
                 <dt>Source</dt>
-                <dd className="mono wrap">{selected.source}</dd>
+                <dd className="mono wrap" title={selected.source}>
+                  {selected.source}
+                </dd>
               </div>
               <div>
                 <dt>Recommended use</dt>
@@ -118,9 +132,16 @@ export function AgentsPage({ agents, onCopy, toast }: AgentsPageProps) {
                 className="btn btn-primary"
                 onClick={() => onCopy(selected.prompt)}
               >
-                Copy prompt
+                复制提示词
               </button>
-              {toast ? <span className="inline-toast" role="status">{toast}</span> : null}
+              {toast ? (
+                <span
+                  className={`inline-toast is-${toast.kind}`}
+                  role="status"
+                >
+                  {toast.message}
+                </span>
+              ) : null}
             </div>
           </>
         ) : (

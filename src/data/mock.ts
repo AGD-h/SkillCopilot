@@ -12,10 +12,11 @@ export const mockWorkspace: WorkspaceInfo = {
   branch: "main",
   gitSummary: "main · synced",
   workingTree: "Working tree clean",
-  phaseLabel: "MVP Phase 1",
-  phaseFocus: "Frontend shell",
+  phaseLabel: "MVP Phase 1 complete",
+  phaseFocus: "UI polish · mock data",
   currentGoal: "本地桌面 AI 项目主脑 + Skill / Agent 管理器",
-  nextStep: "实现前端静态壳和 mock 数据；暂不接真实文件读取。",
+  nextStep:
+    "Phase 2：实现 Tauri 只读读取 HANDOFF.md / AGENTS.md / git status，并让 Dashboard 使用真实数据。",
   nextStepSource: "HANDOFF.md / docs/product/mvp-definition.md（mock）",
   constraints: [
     "不添加 SQLite",
@@ -23,14 +24,14 @@ export const mockWorkspace: WorkspaceInfo = {
     "不接云同步",
     "不自动 commit / push 业务代码",
   ],
-  lastUpdatedLabel: "2026-07-22 18:12（mock）",
+  lastUpdatedLabel: "2026-07-22 20:13（mock）",
 };
 
 export const mockPhases: TaskPhase[] = [
   {
     id: "p1",
     name: "Phase 1",
-    status: "in_progress",
+    status: "done",
     summary: "前端静态壳与 mock 数据",
   },
   {

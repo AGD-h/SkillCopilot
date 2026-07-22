@@ -14,12 +14,18 @@ import {
   mockWorkspace,
 } from "./data/mock";
 import { copyText } from "./lib/clipboard";
-import type { PageId } from "./types";
+import type { PageId, ToastState } from "./types";
 import "./App.css";
 
 function App() {
   const [page, setPage] = useState<PageId>("dashboard");
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const [selectedSkillId, setSelectedSkillId] = useState(
+    mockSkills[0]?.id ?? "",
+  );
+  const [selectedAgentId, setSelectedAgentId] = useState(
+    mockAgents[0]?.id ?? "",
+  );
   const toastTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -30,11 +36,11 @@ function App() {
     };
   }, []);
 
-  function showToast(message: string) {
+  function showToast(next: ToastState) {
     if (toastTimer.current !== null) {
       window.clearTimeout(toastTimer.current);
     }
-    setToast(message);
+    setToast(next);
     toastTimer.current = window.setTimeout(() => {
       setToast(null);
       toastTimer.current = null;
@@ -43,7 +49,11 @@ function App() {
 
   async function handleCopy(text: string) {
     const result = await copyText(text);
-    showToast(result === "ok" ? "已复制" : "复制失败，请手动选择文本");
+    showToast(
+      result === "ok"
+        ? { message: "已复制", kind: "ok" }
+        : { message: "复制失败，请手动选择文本", kind: "fail" },
+    );
   }
 
   return (
@@ -60,21 +70,25 @@ function App() {
             workspace={mockWorkspace}
             phases={mockPhases}
             onCopyNextStep={() => handleCopy(mockWorkspace.nextStep)}
-            toast={page === "dashboard" ? toast : null}
+            toast={toast}
           />
         ) : null}
         {page === "skills" ? (
           <SkillsPage
             skills={mockSkills}
+            selectedId={selectedSkillId}
+            onSelect={setSelectedSkillId}
             onCopy={handleCopy}
-            toast={page === "skills" ? toast : null}
+            toast={toast}
           />
         ) : null}
         {page === "agents" ? (
           <AgentsPage
             agents={mockAgents}
+            selectedId={selectedAgentId}
+            onSelect={setSelectedAgentId}
             onCopy={handleCopy}
-            toast={page === "agents" ? toast : null}
+            toast={toast}
           />
         ) : null}
         {page === "settings" ? (
@@ -86,6 +100,15 @@ function App() {
           />
         ) : null}
       </main>
+      {toast ? (
+        <div
+          className={`app-toast is-${toast.kind}`}
+          role="status"
+          aria-live="polite"
+        >
+          {toast.message}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
-import type { SkillItem } from "../types";
+import type { SkillItem, ToastState } from "../types";
 
 interface SkillsPageProps {
   skills: SkillItem[];
+  selectedId: string;
+  onSelect: (id: string) => void;
   onCopy: (text: string) => void;
-  toast: string | null;
+  toast: ToastState | null;
 }
 
 const TAG_LABEL: Record<SkillItem["tag"], string> = {
@@ -14,15 +16,21 @@ const TAG_LABEL: Record<SkillItem["tag"], string> = {
   docs: "docs",
 };
 
-export function SkillsPage({ skills, onCopy, toast }: SkillsPageProps) {
+export function SkillsPage({
+  skills,
+  selectedId,
+  onSelect,
+  onCopy,
+  toast,
+}: SkillsPageProps) {
   const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState(skills[0]?.id ?? "");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return skills;
     return skills.filter((skill) => {
-      const hay = `${skill.name} ${skill.description} ${skill.path} ${skill.tag}`.toLowerCase();
+      const hay =
+        `${skill.name} ${skill.description} ${skill.path} ${skill.tag}`.toLowerCase();
       return hay.includes(q);
     });
   }, [query, skills]);
@@ -35,11 +43,14 @@ export function SkillsPage({ skills, onCopy, toast }: SkillsPageProps) {
   return (
     <div className="page split-page">
       <div className="split-main">
-        <header className="page-header">
+        <header className="page-header compact-header">
           <div className="page-header-text">
             <h1 className="page-title">Skills</h1>
-            <p className="page-subtitle">浏览可复用 Skill，查看触发场景与正文。</p>
+            <p className="page-subtitle">
+              浏览可复用 Skill，查看触发场景与正文。
+            </p>
           </div>
+          <span className="badge badge-mock">Mock · 4 skills</span>
         </header>
 
         <div className="toolbar">
@@ -66,7 +77,7 @@ export function SkillsPage({ skills, onCopy, toast }: SkillsPageProps) {
                   <button
                     type="button"
                     className={`list-item${active ? " is-selected" : ""}`}
-                    onClick={() => setSelectedId(skill.id)}
+                    onClick={() => onSelect(skill.id)}
                     aria-current={active ? "true" : undefined}
                   >
                     <div className="list-item-top">
@@ -76,7 +87,9 @@ export function SkillsPage({ skills, onCopy, toast }: SkillsPageProps) {
                       </span>
                     </div>
                     <div className="list-item-desc">{skill.description}</div>
-                    <div className="path-chip">{skill.path}</div>
+                    <div className="path-chip" title={skill.path}>
+                      {skill.path}
+                    </div>
                   </button>
                 </li>
               );
@@ -95,7 +108,9 @@ export function SkillsPage({ skills, onCopy, toast }: SkillsPageProps) {
             <dl className="meta-grid">
               <div>
                 <dt>Source path</dt>
-                <dd className="mono wrap">{selected.path}</dd>
+                <dd className="mono wrap" title={selected.path}>
+                  {selected.path}
+                </dd>
               </div>
               <div>
                 <dt>Trigger</dt>
@@ -112,16 +127,23 @@ export function SkillsPage({ skills, onCopy, toast }: SkillsPageProps) {
                 className="btn btn-secondary"
                 onClick={() => onCopy(selected.path)}
               >
-                Copy path
+                复制路径
               </button>
               <button
                 type="button"
                 className="btn btn-primary"
                 onClick={() => onCopy(selected.body)}
               >
-                Copy body
+                复制正文
               </button>
-              {toast ? <span className="inline-toast" role="status">{toast}</span> : null}
+              {toast ? (
+                <span
+                  className={`inline-toast is-${toast.kind}`}
+                  role="status"
+                >
+                  {toast.message}
+                </span>
+              ) : null}
             </div>
           </>
         ) : (

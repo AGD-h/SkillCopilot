@@ -1,16 +1,16 @@
-import type { TaskPhase, WorkspaceInfo } from "../types";
+import type { TaskPhase, ToastState, WorkspaceInfo } from "../types";
 
 interface DashboardPageProps {
   workspace: WorkspaceInfo;
   phases: TaskPhase[];
   onCopyNextStep: () => void;
-  toast: string | null;
+  toast: ToastState | null;
 }
 
 function phaseStatusLabel(status: TaskPhase["status"]): string {
-  if (status === "in_progress") return "In progress";
-  if (status === "done") return "Done";
-  return "Pending";
+  if (status === "in_progress") return "进行中";
+  if (status === "done") return "已完成";
+  return "待开始";
 }
 
 export function DashboardPage({
@@ -29,8 +29,8 @@ export function DashboardPage({
           </p>
         </div>
         <div className="page-header-meta">
-          <span className="badge">Mock data</span>
-          <span className="meta-time">Last updated {workspace.lastUpdatedLabel}</span>
+          <span className="badge badge-mock">Mock data · 未接真实文件</span>
+          <span className="meta-time">更新于 {workspace.lastUpdatedLabel}</span>
         </div>
       </header>
 
@@ -38,7 +38,9 @@ export function DashboardPage({
         <article className="stat-card">
           <div className="stat-label">Workspace</div>
           <div className="stat-title">{workspace.name}</div>
-          <div className="stat-path">{workspace.path}</div>
+          <div className="stat-path" title={workspace.path}>
+            {workspace.path}
+          </div>
         </article>
         <article className="stat-card">
           <div className="stat-label">Git Status</div>
@@ -55,27 +57,40 @@ export function DashboardPage({
       <div className="dashboard-main">
         <section className="next-step-panel" aria-labelledby="next-step-title">
           <div className="next-step-top">
-            <div>
-              <div className="section-kicker">当前目标</div>
-              <p className="goal-text">{workspace.currentGoal}</p>
-            </div>
+            <div className="section-kicker">当前目标</div>
+            <p className="goal-text">{workspace.currentGoal}</p>
           </div>
+          <div className="next-step-divider" aria-hidden="true" />
           <div className="next-step-body">
             <h2 id="next-step-title" className="section-title">
               Next Step
             </h2>
             <p className="next-step-text">{workspace.nextStep}</p>
             <div className="next-step-actions">
-              <button type="button" className="btn btn-primary" onClick={onCopyNextStep}>
-                Copy next step
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={onCopyNextStep}
+              >
+                复制下一步
               </button>
-              {toast ? <span className="inline-toast" role="status">{toast}</span> : null}
+              {toast ? (
+                <span
+                  className={`inline-toast is-${toast.kind}`}
+                  role="status"
+                >
+                  {toast.message}
+                </span>
+              ) : null}
             </div>
             <p className="source-line">来源：{workspace.nextStepSource}</p>
           </div>
         </section>
 
-        <section className="constraints-panel" aria-labelledby="constraints-title">
+        <section
+          className="constraints-panel"
+          aria-labelledby="constraints-title"
+        >
           <h2 id="constraints-title" className="section-title">
             Constraints
           </h2>

@@ -54,6 +54,11 @@
 - `git diff --check` passed for the Phase 1 change set.
 - `pnpm tauri dev` was not run for Phase 1.
 - `pnpm tauri build` was not run for Phase 1.
+- UI polish pass completed (spacing, mock badges, toast success/fail, sticky inspector, 800-wide responsive densify, Settings mock callout).
+- After polish: `pnpm build` exited with code 0; `git diff --check` passed.
+- `pnpm dev` was run briefly; Vite served `http://localhost:1420/` and returned SkillCopilot title HTML; the process was then stopped.
+- Manual browser viewport visual QA at approx 800x600 and 1280x800 was not performed (no interactive browser viewport check in this session).
+- `pnpm tauri dev` / `pnpm tauri build` were not run for the polish pass.
 
 ## Publishing State
 - License: MIT, recorded in `LICENSE`, `package.json`, and `src-tauri/Cargo.toml`.

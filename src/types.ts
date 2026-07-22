@@ -50,3 +50,8 @@ export interface DataSourceItem {
   path: string;
   note: string;
 }
+
+export interface ToastState {
+  message: string;
+  kind: "ok" | "fail";
+}
