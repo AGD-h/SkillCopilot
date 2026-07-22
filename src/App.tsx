@@ -1,50 +1,92 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useRef, useState } from "react";
+import { AgentsPage } from "./components/AgentsPage";
+import { DashboardPage } from "./components/DashboardPage";
+import { SettingsPage } from "./components/SettingsPage";
+import { Sidebar } from "./components/Sidebar";
+import { SkillsPage } from "./components/SkillsPage";
+import {
+  mockAgents,
+  mockDataSources,
+  mockPhaseGates,
+  mockPhases,
+  mockSafetyBoundaries,
+  mockSkills,
+  mockWorkspace,
+} from "./data/mock";
+import { copyText } from "./lib/clipboard";
+import type { PageId } from "./types";
 import "./App.css";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const [page, setPage] = useState<PageId>("dashboard");
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | null>(null);
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current !== null) {
+        window.clearTimeout(toastTimer.current);
+      }
+    };
+  }, []);
+
+  function showToast(message: string) {
+    if (toastTimer.current !== null) {
+      window.clearTimeout(toastTimer.current);
+    }
+    setToast(message);
+    toastTimer.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimer.current = null;
+    }, 1800);
+  }
+
+  async function handleCopy(text: string) {
+    const result = await copyText(text);
+    showToast(result === "ok" ? "已复制" : "复制失败，请手动选择文本");
   }
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+    <div className="app-shell">
+      <Sidebar
+        page={page}
+        onNavigate={setPage}
+        workspaceName={mockWorkspace.name}
+        branch={mockWorkspace.branch}
+      />
+      <main className="app-main" id="main-content">
+        {page === "dashboard" ? (
+          <DashboardPage
+            workspace={mockWorkspace}
+            phases={mockPhases}
+            onCopyNextStep={() => handleCopy(mockWorkspace.nextStep)}
+            toast={page === "dashboard" ? toast : null}
+          />
+        ) : null}
+        {page === "skills" ? (
+          <SkillsPage
+            skills={mockSkills}
+            onCopy={handleCopy}
+            toast={page === "skills" ? toast : null}
+          />
+        ) : null}
+        {page === "agents" ? (
+          <AgentsPage
+            agents={mockAgents}
+            onCopy={handleCopy}
+            toast={page === "agents" ? toast : null}
+          />
+        ) : null}
+        {page === "settings" ? (
+          <SettingsPage
+            workspace={mockWorkspace}
+            dataSources={mockDataSources}
+            phaseGates={mockPhaseGates}
+            safetyBoundaries={mockSafetyBoundaries}
+          />
+        ) : null}
+      </main>
+    </div>
   );
 }
 

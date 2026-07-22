@@ -36,21 +36,24 @@
 - pnpm build scripts are restricted to the required `esbuild` dependency in `pnpm-workspace.yaml`.
 - Cross-editor line endings and indentation are defined by `.editorconfig` and `.gitattributes`.
 - Cross-agent project instructions are recorded in `AGENTS.md`, `.cursor/rules/skillcopilot-main-brain.mdc`, and `.github/copilot-instructions.md`.
+- MVP product definition is recorded at `docs/product/mvp-definition.md`.
 - Dependency lockfiles exist at `pnpm-lock.yaml` and `src-tauri/Cargo.lock`.
-- The frontend and Rust files remain the official template connectivity example; no product behavior has been implemented.
+- Phase 1 frontend static shell is implemented with mock data only.
+- Frontend pages: Dashboard / Skills / Agents / Settings (sidebar navigation, no react-router).
+- Official Tauri template greet/logo frontend example has been removed from `src/`.
+- Real Tauri file reads and Git status wiring are not implemented yet (Phase 2).
+- SQLite has not been added.
 
 ## Scaffold Verification Evidence
 - `pnpm install` exited with code 0; only the `esbuild` install script is allowed.
-- `pnpm build` exited with code 0 and produced `dist`.
-- `pnpm tauri info` detected Windows x64, WebView2, Visual Studio Build Tools 2022, Rust stable MSVC, React, and Vite.
-- `pnpm tauri build` exited with code 0 after the final identifier change.
-- Release executable: `src-tauri/target/release/skillcopilot.exe`.
-- MSI bundle: `src-tauri/target/release/bundle/msi/SkillCopilot_0.1.0_x64_en-US.msi`.
-- NSIS bundle: `src-tauri/target/release/bundle/nsis/SkillCopilot_0.1.0_x64-setup.exe`.
-- The release executable responded and created six new WebView2 processes; the verification process was then stopped.
-- `pnpm tauri dev` started Vite at `http://localhost:1420`, compiled the debug Rust application, launched a responding window, and created six WebView2 processes.
-- All eleven explicitly identified processes from the development verification tree were stopped; no process from that tree remained.
+- Earlier scaffold verification: `pnpm build`, `pnpm tauri info`, `pnpm tauri build`, and `pnpm tauri dev` all succeeded on the template app.
 - Direct frontend and Rust dependencies contain no SQLite package.
+
+## Phase 1 Verification
+- `pnpm build` exited with code 0 after the Phase 1 frontend shell implementation.
+- `git diff --check` passed for the Phase 1 change set.
+- `pnpm tauri dev` was not run for Phase 1.
+- `pnpm tauri build` was not run for Phase 1.
 
 ## Publishing State
 - License: MIT, recorded in `LICENSE`, `package.json`, and `src-tauri/Cargo.toml`.
@@ -58,8 +61,7 @@
 - Public repository: `https://github.com/AGD-h/SkillCopilot`, pushed via authenticated GitHub CLI.
 
 ## Pending Work
-- Implement Phase 1 frontend static shell and mock data per `docs/product/mvp-definition.md`.
-- Replace the official template connectivity example as part of that Phase 1 work.
+- Phase 2: implement Tauri read-only access to `HANDOFF.md`, `AGENTS.md`, and `git status`, and wire Dashboard to real data.
 - For normal development, open a fresh PowerShell or Cursor terminal so the Rust PATH is loaded.
 
 ## Temporary Validation Project
@@ -81,7 +83,7 @@
 - If an installer requires administrator permission, a graphical installer, or a reboot, pause and give manual instructions.
 
 ## Last Known Next Step
-- 根据 MVP 定义实现前端静态壳（Phase 1：四页导航 + mock 数据；见 `docs/product/mvp-definition.md`）。
+- Phase 2：实现 Tauri 只读读取 HANDOFF.md / AGENTS.md / git status，并让 Dashboard 使用真实数据。
 - Do not add SQLite until Phase 5 evaluation concludes it is required.
 
 ## Verified Tool Versions
