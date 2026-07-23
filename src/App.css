@@ -1053,7 +1053,7 @@ button:disabled {
 }
 
 .locale-option:hover {
-  background: #f3f4f6;
+  background: var(--code-bg);
 }
 
 .locale-option:focus-visible {
@@ -1063,11 +1063,17 @@ button:disabled {
 
 .locale-option.is-active,
 .locale-option[aria-pressed="true"] {
-  background: #eff6ff;
+  background: var(--accent-soft);
   border-color: #93c5fd;
   color: #1d4ed8;
   font-weight: 650;
   box-shadow: inset 0 0 0 1px #bfdbfe;
+}
+
+.locale-option.is-active:hover,
+.locale-option[aria-pressed="true"]:hover {
+  background: var(--accent-soft);
+  color: #1d4ed8;
 }
 
 .locale-hint {
@@ -1365,6 +1371,16 @@ button:disabled {
   .app-toast.is-fail {
     background: #2a1414;
     border-color: #7f1d1d;
+  }
+
+  .locale-option.is-active,
+  .locale-option[aria-pressed="true"],
+  .locale-option.is-active:hover,
+  .locale-option[aria-pressed="true"]:hover {
+    background: var(--accent-soft);
+    border-color: #3b82f6;
+    color: #93c5fd;
+    box-shadow: inset 0 0 0 1px #1d4ed8;
   }
 
   .inspector-actions {

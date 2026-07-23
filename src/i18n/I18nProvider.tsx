@@ -2,7 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -31,7 +31,8 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() => resolveInitialLocale());
 
-  useEffect(() => {
+  // Sync before paint so the first painted frame already has the correct lang.
+  useLayoutEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
 

@@ -128,24 +128,26 @@
 ## Phase 3.5 Implementation
 - Added a zero-dependency i18n layer under `src/i18n/`: `locale.ts` (Locale union, system detection, `skillcopilot.locale` localStorage), `messages.ts` (flat `MessageKey` dictionaries — `zh-CN` baseline; `en` / `zh-TW` typed as `Record<MessageKey, string>` so a missing key fails `pnpm build`), and `I18nProvider.tsx` (`locale` / `setLocale` / `t`, updates `document.documentElement.lang`, simple `{param}` interpolation).
 - `src/main.tsx` wraps `<App />` once with `<I18nProvider>`; components call `useI18n()` — no prop-drilling of `t`.
-- First launch: saved locale → else `navigator.languages` / `navigator.language` (`zh-TW`/`zh-HK`/`zh-MO`/`zh-Hant` → zh-TW; other `zh*` → zh-CN; else en; API failure → zh-CN). User choice is persisted immediately (no Save button).
+- Locale detection uses core BCP-47 subtags (via `Intl.Locale` with a manual fallback parser): stop at singleton extensions (`u`/`x`/…); `zh` + `Hant` or region `TW`/`HK`/`MO` → zh-TW; other `zh*` → zh-CN; non-zh → en; empty/API failure → zh-CN. Extended tags such as `zh-TW-u-nu-hanidec` resolve to zh-TW.
+- Pages use a `visitedPages` set: start with Dashboard only; first navigation mounts that page; afterwards pages stay mounted but `hidden`, so locale switches do not remount or re-scan. Skills/Agents query + selection live in App state.
+- Copy feedback: only the global `.app-toast` is a live region (`role="status"` + `aria-live="polite"`); per-page `.inline-toast` remains visual-only (`aria-hidden="true"`).
+- `document.documentElement.lang` syncs in `useLayoutEffect` (before paint). Locale-option hover uses `var(--code-bg)` with dark-mode active colors so hover/active stay readable.
 - Translation boundary: UI chrome, badges, toasts, empty/loading/error wrappers, Settings notes, phase labels, and app-owned mock status text are translated. HANDOFF/AGENTS/Git raw content, Skill/Agent source bodies/paths/names, and Rust warning strings stay original (UI may add a translated wrapper prefix).
-- Settings gains a three-button segmented language control (labels always show 简体中文 / English /繁體中文; `button` + `aria-pressed`; translated group `aria-label`). Copy explains system-follow, remembered choice, and “local files stay original”.
+- Settings gains a three-button segmented language control (labels always show 简体中文 / English / 繁體中文; `button` + `aria-pressed`; translated group `aria-label`). Copy explains system-follow, remembered choice, and “local files stay original”.
 - App-owned mock factories (`createMockWorkspace` / `createMockPhases` / `createMockDataSources` / gates / safety) rebuild via `useMemo` on `t`. Phase statuses corrected: Phase 1–3 done, Phase 4–5 pending. Sidebar chip updated from obsolete “Phase 1 Mock Mode” to “Phase 3 · Local data” (trilingual).
-- Locale switch clears any in-flight toast, does not remount App, does not reset page/search/selection, and does not re-invoke `readWorkspaceStatus` / `scanLocalSkills`. Dates use `toLocaleString(locale)`.
-- No new npm/Cargo dependencies; no SQLite; no Tauri/Rust command changes; no writes beyond `localStorage`.
+- Locale switch clears any in-flight toast, does not change `visitedPages`, does not reset page/search/selection, and does not re-invoke `readWorkspaceStatus` / `scanLocalSkills`. Dates use `toLocaleString(locale)`.
+- No new npm/Cargo dependencies; no SQLite; no Tauri/Rust command changes; no writes beyond `localStorage`. Dictionaries remain 164 keys each.
 
 ## Phase 3.5 Verification
-- `pnpm build` (`tsc && vite build`): exited 0.
-- `git diff --check`: exited 0.
-- Browser `pnpm dev` visual QA completed via Cursor browser tools:
-  - 800×600 Dashboard zh-CN: UI fully Simplified Chinese; sidebar chip “Phase 3 · 本地数据”; no overlap/clip.
-  - 800×600 Skills English: UI English; mock Skill bodies/paths stayed Chinese originals; dual-pane list + inspector usable; badge “Fallback mock data · 4 skills”.
-  - 800×600 / 1280×800 Settings zh-TW: segmented control shows 简体中文 / English / 繁體中文 (labels not locale-renamed); 繁體中文 pressed; UI uses 設定/資料/本機/掃描/複製 with no Simplified leftovers in chrome.
-  - Persistence: after selecting English then 繁體中文, reload kept `localStorage skillcopilot.locale` and `document.documentElement.lang` matching (`en` then `zh-TW`).
-  - State retention: Skills search `codebase-recon` + selected skill survived Settings locale switch (pages kept mounted via `hidden` slots; query/selection lifted to App).
-  - Screenshots captured: Dashboard zh-CN 800, Skills en 800, Settings zh-TW 1280 (locale control).
-- Dev server stopped afterward; port 1420 released.
+- Initial landing: `pnpm build` / browser visual QA recorded under the original “Add trilingual UI localization” commit.
+- Review-fix commit (`Fix localization review issues`):
+  - BCP-47 matrix (Node `--experimental-strip-types` import of `locale.ts`): 14/14 cases passed, including `zh-TW-u-nu-hanidec`, `zh-HK-x-private`, `zh-MO-u-ca-chinese`, `zh-Hant-TW-u-nu-hanidec`, `en-Hant-TW` → en, empty → zh-CN.
+  - Browser DOM QA via temporary out-of-repo Playwright script against `pnpm dev` (not added to the project): initial Dashboard has no `.skills-page` / `.settings-page`; Skills mounts on first visit; locale switch keeps Skills mounted with search/selection; return to Skills is not mid-scan; only one `[role="status"]` (global toast); inline toasts `aria-hidden="true"`; dark `prefers-color-scheme` locale active colors readable; reload keeps `lang`/`localStorage` as zh-TW; 1280 locale control no overflow. Script removed after the run.
+  - `pnpm build`: exited 0.
+  - `git diff --check`: exited 0.
+  - `rg 'role="status"' src` → only `App.tsx` global toast.
+  - `scanLocalSkills` / `readWorkspaceStatus` effects still depend only on `rootPath`.
+  - Dev server stopped; port 1420 not listening.
 - `pnpm tauri dev` / `pnpm tauri build` were NOT run (frontend-only phase).
 
 ## Publishing State

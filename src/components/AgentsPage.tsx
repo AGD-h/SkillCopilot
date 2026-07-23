@@ -143,7 +143,7 @@ export function AgentsPage({
               {toast ? (
                 <span
                   className={`inline-toast is-${toast.kind}`}
-                  role="status"
+                  aria-hidden="true"
                 >
                   {toast.message}
                 </span>
