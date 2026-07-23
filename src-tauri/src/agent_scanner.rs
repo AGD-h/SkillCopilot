@@ -372,6 +372,18 @@ fn scan_cursor_directory(
             if metadata.is_dir() {
                 if depth < MAX_DEPTH {
                     stack.push((path, depth + 1));
+                } else {
+                    // Do not recurse past MAX_DEPTH. Emit a warning so the
+                    // frontend can show a partial real scan instead of a
+                    // silently incomplete "complete" success.
+                    push_warning(
+                        warnings,
+                        warning_count,
+                        format!(
+                            "Skipped directory beyond Cursor rules depth limit (maximum depth {MAX_DEPTH}): {}",
+                            strip_verbatim(&path)
+                        ),
+                    );
                 }
             } else if metadata.is_file()
                 && path.extension().is_some_and(|extension| {
@@ -883,15 +895,80 @@ mod tests {
     fn cursor_depth_six_is_included() {
         let root = temp_dir("depth-six");
         write(&root.join(".cursor/rules/1/2/3/4/5/6/a.mdc"), "x");
-        assert_eq!(scan(&root).agents.len(), 1);
+        let result = scan(&root);
+        assert_eq!(result.agents.len(), 1);
+        assert_eq!(result.warning_count, 0);
+        assert!(!result.truncated);
         std::fs::remove_dir_all(root).ok();
     }
 
     #[test]
-    fn cursor_depth_seven_is_excluded() {
+    fn cursor_depth_seven_is_excluded_with_depth_limit_warning() {
         let root = temp_dir("depth-seven");
         write(&root.join(".cursor/rules/1/2/3/4/5/6/7/a.mdc"), "x");
-        assert!(scan(&root).agents.is_empty());
+        // Keep a shallow sibling so depth-limit warnings do not block other
+        // Cursor agents in the same source tree.
+        write(&root.join(".cursor/rules/shallow.mdc"), "ok");
+        let result = scan(&root);
+        assert_eq!(result.agents.len(), 1);
+        assert_eq!(result.agents[0].name, "shallow");
+        assert!(result.warning_count > 0);
+        assert!(!result.warnings_truncated);
+        assert!(!result.truncated);
+        assert!(result.warnings.iter().any(|warning| {
+            warning.contains("depth limit")
+                && warning.contains("maximum depth")
+                && warning.contains("7")
+        }));
+        std::fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn multiple_depth_limit_skips_accumulate_warning_count() {
+        let root = temp_dir("depth-many");
+        for i in 0..5 {
+            write(
+                &root.join(format!(".cursor/rules/1/2/3/4/5/6/deep-{i}/a.mdc")),
+                "x",
+            );
+        }
+        write(&root.join(".cursor/rules/ok.mdc"), "ok");
+        let result = scan(&root);
+        assert_eq!(result.agents.len(), 1);
+        assert_eq!(result.warning_count, 5);
+        assert_eq!(result.warnings.len(), 5);
+        assert!(!result.warnings_truncated);
+        assert!(!result.truncated);
+        assert_eq!(
+            result
+                .warnings
+                .iter()
+                .filter(|warning| warning.contains("depth limit"))
+                .count(),
+            5
+        );
+        std::fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn depth_limit_warnings_respect_warning_retention_cap() {
+        let root = temp_dir("depth-warn-cap");
+        for i in 0..(MAX_WARNINGS + 5) {
+            write(
+                &root.join(format!(".cursor/rules/1/2/3/4/5/6/deep-{i:03}/a.mdc")),
+                "x",
+            );
+        }
+        let result = scan(&root);
+        assert!(result.agents.is_empty());
+        assert_eq!(result.warnings.len(), MAX_WARNINGS);
+        assert_eq!(result.warning_count, (MAX_WARNINGS + 5) as u32);
+        assert!(result.warnings_truncated);
+        assert!(!result.truncated);
+        assert!(result
+            .warnings
+            .iter()
+            .all(|warning| warning.contains("depth limit")));
         std::fs::remove_dir_all(root).ok();
     }
 
