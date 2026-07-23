@@ -955,6 +955,51 @@ button:disabled {
   line-height: 1.5;
 }
 
+.callout-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: #78350f;
+  line-height: 1.45;
+}
+
+.callout-list li + li {
+  margin-top: 4px;
+}
+
+.app-main:has(.skills-page) {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.skills-page.split-page {
+  flex: 1 1 auto;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.skills-page .split-main {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  flex: 1 1 280px;
+}
+
+.skills-page .item-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.skills-page .inspector {
+  align-self: stretch;
+  max-height: 100%;
+  min-width: 0;
+}
+
 .settings-section {
   margin-bottom: 18px;
 }
@@ -1046,18 +1091,9 @@ button:disabled {
   }
 }
 
+/* Keep Skills/Agents dual-pane usable inside the default 800x600 Tauri
+   window. Only stack the inspector under the list on much narrower widths. */
 @media (max-width: 980px) {
-  .split-page {
-    flex-direction: column;
-  }
-
-  .inspector {
-    width: 100%;
-    flex: 1 1 auto;
-    position: static;
-    max-height: none;
-  }
-
   .dashboard-main {
     grid-template-columns: 1fr;
   }
@@ -1110,6 +1146,18 @@ button:disabled {
     gap: 12px;
   }
 
+  .split-page .inspector {
+    --inspector-width: 260px;
+    width: 260px;
+    flex: 0 1 260px;
+    min-width: 200px;
+  }
+
+  .split-page .split-main {
+    flex: 1 1 280px;
+    min-width: 0;
+  }
+
   .nav-hint {
     display: none;
   }
@@ -1137,6 +1185,35 @@ button:disabled {
     right: 12px;
     bottom: 12px;
     max-width: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .split-page {
+    flex-direction: column;
+  }
+
+  .split-page .inspector,
+  .skills-page .inspector {
+    width: 100%;
+    flex: 1 1 auto;
+    position: static;
+    max-height: none;
+    min-width: 0;
+  }
+
+  .skills-page.split-page {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .skills-page .split-main {
+    overflow: visible;
+  }
+
+  .skills-page .item-list {
+    overflow: visible;
   }
 }
 

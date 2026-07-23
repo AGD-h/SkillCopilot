@@ -82,6 +82,8 @@ export interface SkillScanResult {
   roots: SkillRootStatus[];
   skills: LocalSkillItem[];
   warnings: string[];
+  warningCount: number;
+  warningsTruncated: boolean;
   truncated: boolean;
   scannedAt: string;
 }

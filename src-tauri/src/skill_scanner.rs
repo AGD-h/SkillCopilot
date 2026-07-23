@@ -7,7 +7,8 @@
 //! never panics on user input or disk contents.
 
 use std::collections::HashSet;
-use std::fs::Metadata;
+use std::fs::{File, Metadata};
+use std::io::{ErrorKind, Read};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -19,10 +20,12 @@ const MAX_DEPTH: usize = 8;
 const MAX_SKILLS: usize = 500;
 /// Maximum size of a single `SKILL.md` we will read (1 MiB).
 const MAX_FILE_SIZE: u64 = 1024 * 1024;
-/// Upper bound on collected warnings so the vector cannot grow without limit.
+/// Upper bound on collected warning *messages* returned to the client.
 const MAX_WARNINGS: usize = 100;
 /// Char-safe truncation length for description/trigger summaries.
 const SUMMARY_MAX_CHARS: usize = 200;
+
+const LIMIT_REACHED_MSG: &str = "not scanned after global skill limit was reached";
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -30,18 +33,20 @@ pub struct SkillScanRequest {
     pub root_path: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct SkillScanResult {
     pub workspace_root: String,
     pub roots: Vec<SkillRootStatus>,
     pub skills: Vec<SkillItem>,
     pub warnings: Vec<String>,
+    pub warning_count: u32,
+    pub warnings_truncated: bool,
     pub truncated: bool,
     pub scanned_at: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct SkillRootStatus {
     pub path: String,
@@ -51,7 +56,7 @@ pub struct SkillRootStatus {
     pub error: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct SkillItem {
     pub id: String,
@@ -105,38 +110,103 @@ fn user_home() -> Option<PathBuf> {
         })
 }
 
-/// Scans an explicit list of roots. Kept separate from [`run_scan`] so tests
-/// can drive the scanner against temporary directories without touching real
-/// user Skill files.
+/// Scans an explicit list of roots at the production skill limit.
 fn scan_with_roots(workspace_root: &str, roots: Vec<(PathBuf, &'static str)>) -> SkillScanResult {
+    scan_with_roots_limited(workspace_root, roots, MAX_SKILLS)
+}
+
+/// Scans with a configurable skill cap (tests use small limits).
+fn scan_with_roots_limited(
+    workspace_root: &str,
+    roots: Vec<(PathBuf, &'static str)>,
+    max_skills: usize,
+) -> SkillScanResult {
     let mut skills: Vec<SkillItem> = Vec::new();
     let mut warnings: Vec<String> = Vec::new();
+    let mut warning_count: u32 = 0;
     let mut seen: HashSet<String> = HashSet::new();
     let mut truncated = false;
     let mut root_statuses: Vec<SkillRootStatus> = Vec::new();
 
     for (root, source) in roots {
+        if truncated {
+            root_statuses.push(unscanned_root_status(&root, source));
+            continue;
+        }
+
         let status = scan_root(
             &root,
             source,
             &mut skills,
             &mut warnings,
+            &mut warning_count,
             &mut seen,
             &mut truncated,
+            max_skills,
         );
         root_statuses.push(status);
     }
 
     skills.sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.path.cmp(&b.path)));
 
+    let warnings_truncated = warning_count as usize > warnings.len();
+
     SkillScanResult {
         workspace_root: workspace_root.to_string(),
         roots: root_statuses,
         skills,
         warnings,
+        warning_count,
+        warnings_truncated,
         truncated,
         scanned_at: current_timestamp_millis(),
     }
+}
+
+/// Lightweight status for roots never walked because the global skill limit
+/// was already reached.
+fn unscanned_root_status(root: &Path, source: &str) -> SkillRootStatus {
+    let display = strip_verbatim(root);
+    match std::fs::symlink_metadata(root) {
+        Ok(_) => SkillRootStatus {
+            path: display,
+            source: source.to_string(),
+            exists: true,
+            skill_count: 0,
+            error: Some(LIMIT_REACHED_MSG.to_string()),
+        },
+        Err(err) if err.kind() == ErrorKind::NotFound => SkillRootStatus {
+            path: display,
+            source: source.to_string(),
+            exists: false,
+            skill_count: 0,
+            error: Some(LIMIT_REACHED_MSG.to_string()),
+        },
+        Err(_) => SkillRootStatus {
+            path: display,
+            source: source.to_string(),
+            exists: false,
+            skill_count: 0,
+            error: Some(LIMIT_REACHED_MSG.to_string()),
+        },
+    }
+}
+
+/// Classifies a `symlink_metadata` failure for a scan root.
+///
+/// * `NotFound` -> normal missing root (`exists=false`, no error)
+/// * anything else -> `exists=false` with a short readable error
+fn classify_root_access_error(err: &std::io::Error) -> (bool, Option<String>) {
+    if err.kind() == ErrorKind::NotFound {
+        (false, None)
+    } else {
+        (false, Some(short_io_error(err)))
+    }
+}
+
+fn short_io_error(err: &std::io::Error) -> String {
+    // Keep messages short and free of environment variable values / file bodies.
+    format!("{} ({})", err.kind(), err)
 }
 
 /// Walks a single root (iteratively, depth-limited) collecting `SKILL.md`
@@ -147,20 +217,23 @@ fn scan_root(
     source: &str,
     skills: &mut Vec<SkillItem>,
     warnings: &mut Vec<String>,
+    warning_count: &mut u32,
     seen: &mut HashSet<String>,
     truncated: &mut bool,
+    max_skills: usize,
 ) -> SkillRootStatus {
     let display = strip_verbatim(root);
 
     let meta = match std::fs::symlink_metadata(root) {
         Ok(meta) => meta,
-        Err(_) => {
+        Err(err) => {
+            let (exists, error) = classify_root_access_error(&err);
             return SkillRootStatus {
                 path: display,
                 source: source.to_string(),
-                exists: false,
+                exists,
                 skill_count: 0,
-                error: None,
+                error,
             };
         }
     };
@@ -185,6 +258,19 @@ fn scan_root(
         };
     }
 
+    let canonical_root = match std::fs::canonicalize(root) {
+        Ok(path) => path,
+        Err(err) => {
+            return SkillRootStatus {
+                path: display,
+                source: source.to_string(),
+                exists: true,
+                skill_count: 0,
+                error: Some(format!("failed to canonicalize scan root: {err}")),
+            };
+        }
+    };
+
     let mut error: Option<String> = None;
     let mut count: u32 = 0;
     let mut stack: Vec<(PathBuf, usize)> = vec![(root.to_path_buf(), 0)];
@@ -203,6 +289,7 @@ fn scan_root(
                 } else {
                     push_warning(
                         warnings,
+                        warning_count,
                         format!(
                             "Skipped unreadable directory {}: {err}",
                             strip_verbatim(&dir)
@@ -221,11 +308,31 @@ fn scan_root(
             }
             let entry = match entry {
                 Ok(entry) => entry,
-                Err(_) => continue,
+                Err(err) => {
+                    push_warning(
+                        warnings,
+                        warning_count,
+                        format!(
+                            "Skipped unreadable directory entry under {}: {err}",
+                            strip_verbatim(&dir)
+                        ),
+                    );
+                    continue;
+                }
             };
             let file_type = match entry.file_type() {
                 Ok(file_type) => file_type,
-                Err(_) => continue,
+                Err(err) => {
+                    push_warning(
+                        warnings,
+                        warning_count,
+                        format!(
+                            "Skipped entry with unreadable type under {}: {err}",
+                            strip_verbatim(&dir)
+                        ),
+                    );
+                    continue;
+                }
             };
             if file_type.is_symlink() {
                 continue;
@@ -246,17 +353,24 @@ fn scan_root(
             }
 
             if file_type.is_file() && name_str.eq_ignore_ascii_case("SKILL.md") {
-                if skills.len() >= MAX_SKILLS {
-                    *truncated = true;
-                    break;
-                }
-                match process_skill_file(&entry_path, root, seen) {
+                // Only a successfully parsed, unique skill may consume a slot
+                // or flip `truncated`. Invalid / duplicate / oversized /
+                // non-UTF-8 candidates must not.
+                match process_skill_file(&entry_path, root, &canonical_root, seen) {
                     ProcessOutcome::Added(item) => {
+                        if skills.len() >= max_skills {
+                            // This would have been the (max_skills + 1)-th
+                            // valid unique skill -- do not keep it.
+                            *truncated = true;
+                            break;
+                        }
                         skills.push(*item);
                         count += 1;
                     }
                     ProcessOutcome::Duplicate => {}
-                    ProcessOutcome::Warning(message) => push_warning(warnings, message),
+                    ProcessOutcome::Warning(message) => {
+                        push_warning(warnings, warning_count, message)
+                    }
                 }
             }
         }
@@ -279,49 +393,40 @@ enum ProcessOutcome {
 
 /// Reads and parses one `SKILL.md` into a [`SkillItem`], or explains via a
 /// [`ProcessOutcome`] why it was skipped. Never panics on disk contents.
-fn process_skill_file(path: &Path, root: &Path, seen: &mut HashSet<String>) -> ProcessOutcome {
-    let canonical = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
-    let id = strip_verbatim(&canonical);
-
-    if !seen.insert(id.clone()) {
-        return ProcessOutcome::Duplicate;
-    }
-
-    let meta = match std::fs::metadata(path) {
-        Ok(meta) => meta,
+///
+/// Paths are only inserted into `seen` after a successful parse so failed
+/// candidates do not permanently occupy a de-duplication slot.
+fn process_skill_file(
+    path: &Path,
+    root: &Path,
+    canonical_root: &Path,
+    seen: &mut HashSet<String>,
+) -> ProcessOutcome {
+    let canonical = match std::fs::canonicalize(path) {
+        Ok(path) => path,
         Err(err) => {
             return ProcessOutcome::Warning(format!(
-                "Skipped unreadable SKILL.md {}: {err}",
+                "Skipped uncanonicalizable SKILL.md {}: {err}",
                 strip_verbatim(path)
             ));
         }
     };
 
-    if meta.len() > MAX_FILE_SIZE {
+    if !path_is_within_root(&canonical, canonical_root) {
         return ProcessOutcome::Warning(format!(
-            "Skipped SKILL.md larger than 1 MiB: {}",
+            "Skipped SKILL.md outside scan root: {}",
             strip_verbatim(path)
         ));
     }
 
-    let bytes = match std::fs::read(path) {
-        Ok(bytes) => bytes,
-        Err(err) => {
-            return ProcessOutcome::Warning(format!(
-                "Skipped unreadable SKILL.md {}: {err}",
-                strip_verbatim(path)
-            ));
-        }
-    };
+    let id = strip_verbatim(&canonical);
+    if seen.contains(&id) {
+        return ProcessOutcome::Duplicate;
+    }
 
-    let content = match String::from_utf8(bytes) {
-        Ok(content) => content,
-        Err(_) => {
-            return ProcessOutcome::Warning(format!(
-                "Skipped non-UTF-8 SKILL.md: {}",
-                strip_verbatim(path)
-            ));
-        }
+    let (content, meta) = match read_skill_bounded(&canonical) {
+        Ok(pair) => pair,
+        Err(message) => return ProcessOutcome::Warning(message),
     };
 
     let parent_dir_name = path
@@ -341,6 +446,8 @@ fn process_skill_file(path: &Path, root: &Path, seen: &mut HashSet<String>) -> P
                 .unwrap_or_default()
         });
 
+    seen.insert(id.clone());
+
     ProcessOutcome::Added(Box::new(SkillItem {
         id,
         name: meta_summary.name,
@@ -355,19 +462,60 @@ fn process_skill_file(path: &Path, root: &Path, seen: &mut HashSet<String>) -> P
     }))
 }
 
+/// Opens the file once, reads at most `MAX_FILE_SIZE + 1` bytes, and rejects
+/// anything larger. Uses the opened handle's metadata for mtime.
+fn read_skill_bounded(path: &Path) -> Result<(String, Metadata), String> {
+    let mut file = File::open(path).map_err(|err| {
+        format!(
+            "Skipped unreadable SKILL.md {}: {err}",
+            strip_verbatim(path)
+        )
+    })?;
+
+    let meta = file.metadata().map_err(|err| {
+        format!(
+            "Skipped unreadable SKILL.md {}: {err}",
+            strip_verbatim(path)
+        )
+    })?;
+
+    let mut limited = (&mut file).take(MAX_FILE_SIZE + 1);
+    let mut bytes = Vec::new();
+    limited.read_to_end(&mut bytes).map_err(|err| {
+        format!(
+            "Skipped unreadable SKILL.md {}: {err}",
+            strip_verbatim(path)
+        )
+    })?;
+
+    if bytes.len() as u64 > MAX_FILE_SIZE {
+        return Err(format!(
+            "Skipped SKILL.md larger than 1 MiB: {}",
+            strip_verbatim(path)
+        ));
+    }
+
+    let content = String::from_utf8(bytes)
+        .map_err(|_| format!("Skipped non-UTF-8 SKILL.md: {}", strip_verbatim(path)))?;
+
+    Ok((content, meta))
+}
+
+/// Returns true when `candidate` is the root itself or a descendant of it.
+fn path_is_within_root(candidate: &Path, root: &Path) -> bool {
+    if candidate == root {
+        return true;
+    }
+    candidate.starts_with(root)
+}
+
 struct SkillMeta {
     name: String,
     description: String,
     trigger: String,
 }
 
-/// Parses lightweight metadata from a `SKILL.md` body:
-/// * a top `---` frontmatter block with simple `key: value` lines
-///   (`name` / `description` / `trigger`), matched paired quotes stripped;
-/// * `name` falls back to the parent directory name;
-/// * `description` falls back to the first non-empty, non-heading paragraph;
-/// * `trigger` falls back to the description.
-/// All summaries are char-safe truncated so UTF-8 is never split.
+/// Parses lightweight metadata from a `SKILL.md` body.
 fn parse_skill(content: &str, parent_dir_name: &str) -> SkillMeta {
     let lines: Vec<&str> = content.lines().collect();
     let mut index = 0;
@@ -375,28 +523,57 @@ fn parse_skill(content: &str, parent_dir_name: &str) -> SkillMeta {
     let mut front_description: Option<String> = None;
     let mut front_trigger: Option<String> = None;
 
-    let has_frontmatter = lines
+    let first = lines
         .first()
-        .map(|line| line.trim_start_matches('\u{feff}').trim() == "---")
-        .unwrap_or(false);
+        .map(|line| line.trim_start_matches('\u{feff}').trim())
+        .unwrap_or("");
+    let has_opening = first == "---";
 
-    if has_frontmatter {
-        index = 1;
-        while index < lines.len() {
-            let line = lines[index];
-            if line.trim() == "---" {
-                index += 1;
+    if has_opening {
+        let mut closed = false;
+        let mut probe = 1;
+        while probe < lines.len() {
+            if lines[probe].trim() == "---" {
+                closed = true;
                 break;
             }
-            if let Some((key, value)) = parse_kv(line) {
-                match key.as_str() {
-                    "name" => front_name = non_empty(value),
-                    "description" => front_description = non_empty(value),
-                    "trigger" => front_trigger = non_empty(value),
-                    _ => {}
+            probe += 1;
+        }
+
+        if closed {
+            index = 1;
+            while index < lines.len() {
+                let line = lines[index];
+                if line.trim() == "---" {
+                    index += 1;
+                    break;
                 }
+                if let Some((key, value)) = parse_kv(line) {
+                    match key.as_str() {
+                        "name" => front_name = non_empty(value),
+                        "description" => front_description = non_empty(value),
+                        "trigger" => front_trigger = non_empty(value),
+                        _ => {}
+                    }
+                }
+                index += 1;
             }
-            index += 1;
+        } else {
+            // Malformed / unclosed frontmatter: ignore FM fields and skip the
+            // opening fence plus simple key:value lines so body fallback does
+            // not swallow the broken frontmatter text as the description.
+            index = 1;
+            while index < lines.len() {
+                let trimmed = lines[index].trim_start_matches('\u{feff}').trim();
+                if trimmed.is_empty() || trimmed.starts_with('#') {
+                    break;
+                }
+                if parse_kv(lines[index]).is_some() {
+                    index += 1;
+                    continue;
+                }
+                break;
+            }
         }
     }
 
@@ -416,8 +593,6 @@ fn parse_skill(content: &str, parent_dir_name: &str) -> SkillMeta {
     }
 }
 
-/// Parses a single-line `key: value` frontmatter entry. Returns `None` for
-/// lines without a colon or with an empty key.
 fn parse_kv(line: &str) -> Option<(String, String)> {
     let colon = line.find(':')?;
     let key = line[..colon].trim().to_lowercase();
@@ -436,12 +611,11 @@ fn non_empty(value: String) -> Option<String> {
     }
 }
 
-/// First non-empty, non-heading paragraph joined into a single line.
 fn first_paragraph(lines: &[&str]) -> String {
     let mut collected: Vec<&str> = Vec::new();
     for line in lines {
-        let trimmed = line.trim();
-        if trimmed.is_empty() {
+        let trimmed = line.trim_start_matches('\u{feff}').trim();
+        if trimmed.is_empty() || trimmed == "---" {
             if collected.is_empty() {
                 continue;
             }
@@ -458,7 +632,6 @@ fn first_paragraph(lines: &[&str]) -> String {
     collected.join(" ")
 }
 
-/// Strips a single pair of matching surrounding single or double quotes.
 fn strip_quotes(value: &str) -> &str {
     let value = value.trim();
     let mut chars = value.chars();
@@ -470,23 +643,23 @@ fn strip_quotes(value: &str) -> &str {
     }
 }
 
-/// Char-safe truncation: never splits a multi-byte UTF-8 code point.
 fn truncate_chars(value: &str, max_chars: usize) -> String {
     value.chars().take(max_chars).collect()
 }
 
 fn is_ignored_dir(name: &str) -> bool {
-    matches!(name, ".git" | "node_modules" | "target")
+    name.eq_ignore_ascii_case(".git")
+        || name.eq_ignore_ascii_case("node_modules")
+        || name.eq_ignore_ascii_case("target")
 }
 
-fn push_warning(warnings: &mut Vec<String>, message: String) {
+fn push_warning(warnings: &mut Vec<String>, warning_count: &mut u32, message: String) {
+    *warning_count = warning_count.saturating_add(1);
     if warnings.len() < MAX_WARNINGS {
         warnings.push(message);
     }
 }
 
-/// Removes the Windows verbatim (`\\?\`) prefix from canonicalized paths so
-/// paths shown to users stay readable.
 fn strip_verbatim(path: &Path) -> String {
     let text = path.to_string_lossy().to_string();
     text.strip_prefix(r"\\?\")
@@ -512,6 +685,7 @@ fn current_timestamp_millis() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io;
 
     fn unique_temp_dir(tag: &str) -> PathBuf {
         let nanos = SystemTime::now()
@@ -535,6 +709,22 @@ mod tests {
         std::fs::write(path, contents).expect("write file");
     }
 
+    fn write_bytes(path: &Path, bytes: &[u8]) {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).expect("create parent dir");
+        }
+        std::fs::write(path, bytes).expect("write bytes");
+    }
+
+    fn write_n_skills(root: &Path, count: usize) {
+        for i in 0..count {
+            write_file(
+                &root.join(format!("skill-{i:04}")).join("SKILL.md"),
+                &format!("---\nname: Skill-{i:04}\n---\nBody {i}.\n"),
+            );
+        }
+    }
+
     #[test]
     fn frontmatter_fields_are_parsed() {
         let content = "---\nname: My Skill\ndescription: \"Does useful things\"\ntrigger: 'when needed'\n---\n\n# Heading\n\nBody paragraph.\n";
@@ -555,12 +745,11 @@ mod tests {
 
     #[test]
     fn chinese_summary_truncation_is_utf8_safe() {
-        let body = "一".repeat(500);
+        let body = "\u{4e00}".repeat(500);
         let content = format!("{body}\n");
         let meta = parse_skill(&content, "zh");
         assert_eq!(meta.description.chars().count(), SUMMARY_MAX_CHARS);
-        // Round-trips as valid UTF-8 (would panic on a split code point).
-        assert!(meta.description.chars().all(|c| c == '一'));
+        assert!(meta.description.chars().all(|c| c == '\u{4e00}'));
     }
 
     #[test]
@@ -624,10 +813,176 @@ mod tests {
     }
 
     #[test]
+    fn not_found_is_classified_as_normal_missing() {
+        let err = io::Error::new(ErrorKind::NotFound, "gone");
+        let (exists, error) = classify_root_access_error(&err);
+        assert!(!exists);
+        assert!(error.is_none());
+    }
+
+    #[test]
+    fn non_not_found_root_errors_are_not_normal_missing() {
+        let err = io::Error::new(ErrorKind::PermissionDenied, "denied");
+        let (exists, error) = classify_root_access_error(&err);
+        assert!(!exists);
+        assert!(error.is_some());
+        let message = error.unwrap();
+        assert!(message.contains("permission denied") || message.contains("PermissionDenied"));
+    }
+
+    #[test]
+    fn root_that_is_a_file_reports_exists_with_error() {
+        let root = unique_temp_dir("file-root");
+        let file_path = root.join("not-a-dir");
+        write_file(&file_path, "hello");
+
+        let result = scan_with_roots("workspace", vec![(file_path.clone(), "workspace")]);
+        assert!(result.roots[0].exists);
+        assert_eq!(result.roots[0].skill_count, 0);
+        assert!(result.roots[0]
+            .error
+            .as_deref()
+            .unwrap_or("")
+            .contains("not a directory"));
+
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
     fn oversized_skill_is_skipped_with_warning() {
         let root = unique_temp_dir("oversize");
         let big = "a".repeat((MAX_FILE_SIZE as usize) + 16);
         write_file(&root.join("huge").join("SKILL.md"), &big);
+
+        let result = scan_with_roots("workspace", vec![(root.clone(), "workspace")]);
+        assert_eq!(result.skills.len(), 0);
+        assert!(result.warning_count >= 1);
+        assert!(result
+            .warnings
+            .iter()
+            .any(|warning| warning.contains("larger than 1 MiB")));
+
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn exactly_max_skills_is_not_truncated() {
+        let root = unique_temp_dir("exact-cap");
+        write_n_skills(&root, 3);
+
+        let result = scan_with_roots_limited("workspace", vec![(root.clone(), "workspace")], 3);
+        assert_eq!(result.skills.len(), 3);
+        assert!(!result.truncated);
+
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn one_over_max_sets_truncated_and_keeps_cap() {
+        let root = unique_temp_dir("over-cap");
+        write_n_skills(&root, 4);
+
+        let result = scan_with_roots_limited("workspace", vec![(root.clone(), "workspace")], 3);
+        assert_eq!(result.skills.len(), 3);
+        assert!(result.truncated);
+
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn duplicates_after_cap_do_not_set_truncated() {
+        let root_a = unique_temp_dir("cap-dup-a");
+        write_n_skills(&root_a, 2);
+        let result = scan_with_roots_limited(
+            "workspace",
+            vec![(root_a.clone(), "workspace"), (root_a.clone(), "user")],
+            2,
+        );
+        assert_eq!(result.skills.len(), 2);
+        assert!(!result.truncated);
+        assert_eq!(result.roots[1].skill_count, 0);
+
+        std::fs::remove_dir_all(&root_a).ok();
+    }
+
+    #[test]
+    fn oversized_after_cap_does_not_set_truncated() {
+        let root = unique_temp_dir("cap-oversize");
+        write_n_skills(&root, 2);
+        let big = "a".repeat((MAX_FILE_SIZE as usize) + 8);
+        write_file(&root.join("zzz-huge").join("SKILL.md"), &big);
+
+        let result = scan_with_roots_limited("workspace", vec![(root.clone(), "workspace")], 2);
+        assert_eq!(result.skills.len(), 2);
+        assert!(!result.truncated);
+        assert!(result.warning_count >= 1);
+        assert!(result
+            .warnings
+            .iter()
+            .any(|warning| warning.contains("larger than 1 MiB")));
+
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn non_utf8_after_cap_does_not_set_truncated() {
+        let root = unique_temp_dir("cap-utf8");
+        write_n_skills(&root, 2);
+        write_bytes(&root.join("zzz-bad").join("SKILL.md"), &[0xFF, 0xFE, 0xFD]);
+
+        let result = scan_with_roots_limited("workspace", vec![(root.clone(), "workspace")], 2);
+        assert_eq!(result.skills.len(), 2);
+        assert!(!result.truncated);
+        assert!(result.warning_count >= 1);
+        assert!(result
+            .warnings
+            .iter()
+            .any(|warning| warning.contains("non-UTF-8")));
+
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn remaining_roots_marked_when_limit_reached() {
+        let root_a = unique_temp_dir("limit-a");
+        let root_b = unique_temp_dir("limit-b");
+        write_n_skills(&root_a, 3);
+        write_n_skills(&root_b, 2);
+
+        let result = scan_with_roots_limited(
+            "workspace",
+            vec![(root_a.clone(), "workspace"), (root_b.clone(), "user")],
+            2,
+        );
+        assert_eq!(result.skills.len(), 2);
+        assert!(result.truncated);
+        assert_eq!(result.roots[1].error.as_deref(), Some(LIMIT_REACHED_MSG));
+        assert_eq!(result.roots[1].skill_count, 0);
+
+        std::fs::remove_dir_all(&root_a).ok();
+        std::fs::remove_dir_all(&root_b).ok();
+    }
+
+    #[test]
+    fn exactly_one_mib_is_readable() {
+        let root = unique_temp_dir("exact-mib");
+        let body = "b".repeat(MAX_FILE_SIZE as usize);
+        let path = root.join("exact").join("SKILL.md");
+        write_file(&path, &body);
+
+        let result = scan_with_roots("workspace", vec![(root.clone(), "workspace")]);
+        assert_eq!(result.skills.len(), 1);
+        assert_eq!(result.skills[0].body.len(), MAX_FILE_SIZE as usize);
+        assert_eq!(result.skills[0].body, body);
+
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn one_mib_plus_one_is_skipped() {
+        let root = unique_temp_dir("mib-plus");
+        let body = "c".repeat((MAX_FILE_SIZE as usize) + 1);
+        write_file(&root.join("big").join("SKILL.md"), &body);
 
         let result = scan_with_roots("workspace", vec![(root.clone(), "workspace")]);
         assert_eq!(result.skills.len(), 0);
@@ -637,6 +992,64 @@ mod tests {
             .any(|warning| warning.contains("larger than 1 MiB")));
 
         std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn body_matches_disk_bytes_decoded() {
+        let root = unique_temp_dir("body-roundtrip");
+        let content = "---\nname: Roundtrip\n---\nfull body ok\nline 2\n";
+        let path = root.join("rt").join("SKILL.md");
+        write_file(&path, content);
+
+        let result = scan_with_roots("workspace", vec![(root.clone(), "workspace")]);
+        assert_eq!(result.skills.len(), 1);
+        assert_eq!(result.skills[0].body, content);
+
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn ignored_dirs_are_case_insensitive() {
+        assert!(is_ignored_dir(".GIT"));
+        assert!(is_ignored_dir("Node_Modules"));
+        assert!(is_ignored_dir("TARGET"));
+        assert!(!is_ignored_dir("skills"));
+    }
+
+    #[test]
+    fn mixed_case_ignored_dirs_are_skipped_during_scan() {
+        let root = unique_temp_dir("ignore-case");
+        write_file(
+            &root.join("NODE_MODULES").join("hidden").join("SKILL.md"),
+            "---\nname: Hidden\n---\nShould not appear.\n",
+        );
+        write_file(
+            &root.join("visible").join("SKILL.md"),
+            "---\nname: Visible\n---\nOk.\n",
+        );
+
+        let result = scan_with_roots("workspace", vec![(root.clone(), "workspace")]);
+        assert_eq!(result.skills.len(), 1);
+        assert_eq!(result.skills[0].name, "Visible");
+
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn unclosed_frontmatter_falls_back_to_body() {
+        let content =
+            "---\nname: ShouldNotWin\ndescription: bad\n\n# Title\n\nReal description paragraph.\n";
+        let meta = parse_skill(content, "parent");
+        assert_eq!(meta.name, "parent");
+        assert_eq!(meta.description, "Real description paragraph.");
+    }
+
+    #[test]
+    fn bom_and_empty_frontmatter_fields_are_handled() {
+        let content = "\u{feff}---\nname: \ndescription: \"\"\n---\n\nUseful body text.\n";
+        let meta = parse_skill(content, "parent");
+        assert_eq!(meta.name, "parent");
+        assert_eq!(meta.description, "Useful body text.");
     }
 
     #[test]
@@ -658,7 +1071,6 @@ mod tests {
         let result = scan_with_roots("workspace", vec![(root.clone(), "workspace")]);
         let names: Vec<&str> = result.skills.iter().map(|s| s.name.as_str()).collect();
         assert_eq!(names, vec!["Apple", "Apple", "Mango"]);
-        // Two "Apple" entries must be ordered by path (m before z).
         assert!(result.skills[0].path < result.skills[1].path);
 
         std::fs::remove_dir_all(&root).ok();
@@ -672,15 +1084,32 @@ mod tests {
             "---\nname: One\n---\nBody.\n",
         );
 
-        // Same physical root passed twice as two logical roots.
         let result = scan_with_roots(
             "workspace",
             vec![(root.clone(), "workspace"), (root.clone(), "user")],
         );
         assert_eq!(result.skills.len(), 1);
-        // First root claims it; the second finds only a duplicate.
         assert_eq!(result.roots[0].skill_count, 1);
         assert_eq!(result.roots[1].skill_count, 0);
+
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn warning_count_tracks_beyond_retained_list() {
+        let root = unique_temp_dir("warn-cap");
+        for i in 0..(MAX_WARNINGS + 5) {
+            write_bytes(
+                &root.join(format!("bad-{i:03}")).join("SKILL.md"),
+                &[0xFF, 0xFE, 0xFD],
+            );
+        }
+
+        let result = scan_with_roots("workspace", vec![(root.clone(), "workspace")]);
+        assert_eq!(result.skills.len(), 0);
+        assert_eq!(result.warnings.len(), MAX_WARNINGS);
+        assert_eq!(result.warning_count, (MAX_WARNINGS + 5) as u32);
+        assert!(result.warnings_truncated);
 
         std::fs::remove_dir_all(&root).ok();
     }

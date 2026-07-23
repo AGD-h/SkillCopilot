@@ -96,7 +96,21 @@ export function SkillsPage({ rootPath, onCopy, toast }: SkillsPageProps) {
     filtered.find((skill) => skill.id === selectedId) ?? filtered[0] ?? null;
 
   const failedRoots = result?.roots.filter((root) => root.error) ?? [];
-  const isPartial = loadState === "success" && failedRoots.length > 0;
+  const warningCount = result?.warningCount ?? 0;
+  const warningsTruncated = result?.warningsTruncated ?? false;
+  const truncated = result?.truncated ?? false;
+  const warningPreview = result?.warnings.slice(0, 3) ?? [];
+  const remainingWarnings = Math.max(
+    0,
+    warningCount - warningPreview.length,
+  );
+
+  const isPartial =
+    loadState === "success" &&
+    (failedRoots.length > 0 ||
+      warningCount > 0 ||
+      warningsTruncated ||
+      truncated);
 
   const badge = (() => {
     if (loadState === "loading" && !result) {
@@ -118,7 +132,7 @@ export function SkillsPage({ rootPath, onCopy, toast }: SkillsPageProps) {
     loadState === "success" && skills.length === 0 && query.trim() === "";
 
   return (
-    <div className="page split-page">
+    <div className="page split-page skills-page">
       <div className="split-main">
         <header className="page-header compact-header">
           <div className="page-header-text">
@@ -145,20 +159,35 @@ export function SkillsPage({ rootPath, onCopy, toast }: SkillsPageProps) {
         {isPartial ? (
           <div className="callout callout-warning" role="note">
             <div className="callout-title">
-              部分扫描根不可用（已展示可读取到的真实 Skill）
+              扫描完成，但部分项目被跳过
             </div>
             <p className="callout-body">
-              {failedRoots.length} 个扫描根读取失败，其余结果仍为真实本地数据。
+              {[
+                failedRoots.length > 0
+                  ? `${failedRoots.length} 个扫描根不可用`
+                  : null,
+                warningCount > 0 ? `${warningCount} 条警告` : null,
+                truncated ? "已达到 500 条 Skill 上限" : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+              。仍展示真实本地数据，未回退 mock。
             </p>
-          </div>
-        ) : null}
-
-        {result?.truncated ? (
-          <div className="callout callout-warning" role="note">
-            <div className="callout-title">结果已截断</div>
-            <p className="callout-body">
-              Skill 数量超过上限，仅展示前 500 条。
-            </p>
+            {warningPreview.length > 0 ? (
+              <ul className="callout-list">
+                {warningPreview.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            ) : null}
+            {remainingWarnings > 0 ? (
+              <p className="callout-body">另有 {remainingWarnings} 条警告未展开。</p>
+            ) : null}
+            {warningsTruncated ? (
+              <p className="callout-body">
+                详细警告仅保留前 100 条。
+              </p>
+            ) : null}
           </div>
         ) : null}
 
