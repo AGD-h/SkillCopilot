@@ -19,18 +19,19 @@ export function SettingsPage({
         <div className="page-header-text">
           <h1 className="page-title">Settings</h1>
           <p className="page-subtitle">
-            本地数据来源与阶段门禁说明（Phase 1 为 mock）。
+            本地数据来源与阶段门禁说明（Phase 2 已开始读取真实文件）。
           </p>
         </div>
-        <span className="badge badge-mock">Mock binding</span>
+        <span className="badge badge-mock">Workspace 选择器未实现</span>
       </header>
 
       <div className="callout callout-warning" role="note">
-        <div className="callout-title">当前未读取真实文件</div>
+        <div className="callout-title">Phase 2：已部分接入真实本地状态</div>
         <p className="callout-body">
-          Phase 1 仅展示 mock 数据，不调用 Tauri
-          command，也不扫描磁盘。切换文件夹、真实 HANDOFF / Git
-          状态将在 Phase 2 启用。
+          Dashboard 现在通过 Tauri command 只读读取 HANDOFF.md、AGENTS.md 与{" "}
+          <code>git status --short --branch</code>，失败时回退到 mock。但
+          Workspace 仍固定为 <code>E:\SkillCopilot</code>，文件夹选择器、Skill
+          扫描与 Agent 解析尚未实现，本页下方列表仍为 mock 说明。
         </p>
       </div>
 
@@ -45,13 +46,17 @@ export function SettingsPage({
               <div className="mono wrap" title={workspace.path}>
                 {workspace.path}
               </div>
-              <div className="stat-muted">状态：Mock binding（展示用）</div>
+              <div className="stat-muted">
+                状态：固定绑定（Dashboard 已按此路径读取真实文件）
+              </div>
             </div>
             <div className="settings-action">
               <button type="button" className="btn btn-secondary" disabled>
                 Change folder
               </button>
-              <p className="hint-text">Phase 2 才可用：选择真实本地目录。</p>
+              <p className="hint-text">
+                Workspace 选择器仍未实现，当前固定为 E:\SkillCopilot。
+              </p>
             </div>
           </div>
         </div>

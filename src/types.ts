@@ -55,3 +55,37 @@ export interface ToastState {
   message: string;
   kind: "ok" | "fail";
 }
+
+export interface GitStatus {
+  branchLine: string;
+  branchName: string;
+  isClean: boolean;
+  aheadBehind: string;
+  rawStatus: string;
+}
+
+export interface HandoffSummary {
+  exists: boolean;
+  path: string;
+  currentGoal: string[];
+  lastKnownNextStep: string[];
+  importantConstraints: string[];
+  rawExcerpt: string;
+  error?: string | null;
+}
+
+export interface AgentsSummary {
+  exists: boolean;
+  path: string;
+  excerpt: string;
+  error?: string | null;
+}
+
+export interface WorkspaceStatus {
+  workspaceName: string;
+  rootPath: string;
+  git: GitStatus;
+  handoff: HandoffSummary;
+  agents: AgentsSummary;
+  fetchedAt: string;
+}

@@ -41,7 +41,7 @@
 - Phase 1 frontend static shell is implemented with mock data only.
 - Frontend pages: Dashboard / Skills / Agents / Settings (sidebar navigation, no react-router).
 - Official Tauri template greet/logo frontend example has been removed from `src/`.
-- Real Tauri file reads and Git status wiring are not implemented yet (Phase 2).
+- Phase 2 implemented: Dashboard reads real local workspace status via Tauri, with mock fallback.
 - SQLite has not been added.
 
 ## Scaffold Verification Evidence
@@ -60,13 +60,33 @@
 - Manual browser viewport visual QA at approx 800x600 and 1280x800 was not performed (no interactive browser viewport check in this session).
 - `pnpm tauri dev` / `pnpm tauri build` were not run for the polish pass.
 
+## Phase 2 Implementation
+- Added read-only Tauri command `read_workspace_status(request: { rootPath })` in `src-tauri/src/lib.rs`, registered alongside `greet` in `generate_handler!`.
+- The command returns `WorkspaceStatus { workspaceName, rootPath, git, handoff, agents, fetchedAt }` (serde `rename_all = "camelCase"`), and never panics: missing/unreadable files are reported per-summary via `exists=false` + `error`, and git failures are captured in `git.rawStatus` instead of failing the whole call.
+- Git is read via `std::process::Command` argument vectors: `git -C <root> status --short --branch` (no shell string, no repo-mutating subcommands). Parsing extracts `branchLine` (first `## ` line), `branchName`, `aheadBehind` (`[...]` text), `isClean` (no non-branch non-empty lines), and full `rawStatus`.
+- HANDOFF.md parsing extracts bullet lines under `## Current Goal`, `## Last Known Next Step`, `## Important Constraints`, plus a char-safe 1200-char `rawExcerpt`. AGENTS.md provides a char-safe 1200-char excerpt.
+- Frontend: new `src/lib/workspaceApi.ts` exports `readWorkspaceStatus(rootPath)`; new types in `src/types.ts` (`WorkspaceStatus` / `GitStatus` / `HandoffSummary` / `AgentsSummary`).
+- Dashboard (`src/components/DashboardPage.tsx`) loads real status on mount for `E:\SkillCopilot`, shows loading/real/fallback badge ("Real local data" vs "Fallback mock data"), renders real workspace name / path / git branch + clean|dirty + ahead-behind / Current Goal / Next Step / Constraints, and falls back to mock (with an error callout) when the Tauri runtime is unavailable, so it never white-screens.
+- Settings (`src/components/SettingsPage.tsx`) copy updated: Phase 2 reads real HANDOFF/AGENTS/Git status, but the workspace folder picker is still not implemented (root fixed to `E:\SkillCopilot`).
+- No new dependencies added; no SQLite; no database crate; no capability/config changes (user-defined Tauri commands do not require capability entries).
+
+## Phase 2 Verification
+- `pnpm build` (`tsc && vite build`) exited with code 0.
+- `cargo check` for `src-tauri` exited with code 0 (full Tauri app type-checked/compiled).
+- `git diff --check` exited with code 0 (only informational CRLF→LF normalization notices, per `.gitattributes`; no whitespace errors).
+- `pnpm tauri info` ran successfully (Tauri 2.11.5, WebView2 150.0.4078.83, rustc 1.97.1, React + Vite).
+- `pnpm tauri dev` was NOT run in this automated session (no reliable interactive display to visually confirm the window). Not confirmed: live GUI render / "not white screen" via an actual Tauri window. Rust compilation, frontend build, and invoke wiring were verified instead. No dev-server or GUI processes were left running.
+
 ## Publishing State
 - License: MIT, recorded in `LICENSE`, `package.json`, and `src-tauri/Cargo.toml`.
 - Git repository initialized on branch `main` with the scaffold as the first commit.
 - Public repository: `https://github.com/AGD-h/SkillCopilot`, pushed via authenticated GitHub CLI.
 
 ## Pending Work
-- Phase 2: implement Tauri read-only access to `HANDOFF.md`, `AGENTS.md`, and `git status`, and wire Dashboard to real data.
+- Phase 2 done: Tauri read-only access to `HANDOFF.md`, `AGENTS.md`, and `git status` is implemented and Dashboard uses real data with mock fallback.
+- Phase 3: scan local Skill files and show a real Skill list with read-only detail on the Skills page.
+- Settings workspace folder picker is still not implemented (root fixed to `E:\SkillCopilot`).
+- Verify `pnpm tauri dev` renders the real Dashboard in an actual window when a display is available.
 - For normal development, open a fresh PowerShell or Cursor terminal so the Rust PATH is loaded.
 
 ## Temporary Validation Project
@@ -88,7 +108,7 @@
 - If an installer requires administrator permission, a graphical installer, or a reboot, pause and give manual instructions.
 
 ## Last Known Next Step
-- Phase 2：实现 Tauri 只读读取 HANDOFF.md / AGENTS.md / git status，并让 Dashboard 使用真实数据。
+- Phase 3：扫描本地 Skill 文件并在 Skills 页展示真实 Skill 列表与只读详情。
 - Do not add SQLite until Phase 5 evaluation concludes it is required.
 
 ## Verified Tool Versions

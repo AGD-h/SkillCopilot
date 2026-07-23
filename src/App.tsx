@@ -69,7 +69,8 @@ function App() {
           <DashboardPage
             workspace={mockWorkspace}
             phases={mockPhases}
-            onCopyNextStep={() => handleCopy(mockWorkspace.nextStep)}
+            rootPath={mockWorkspace.path}
+            onCopyNextStep={handleCopy}
             toast={toast}
           />
         ) : null}
