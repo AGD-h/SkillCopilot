@@ -113,6 +113,15 @@
   - `pnpm tauri info`: ran successfully.
   - `git diff --check`: exited 0.
   - Real read-only rescan of `E:\SkillCopilot` after the fix (temporary smoke test, removed before commit): 13 skills, `truncated=false`, `warning_count=0`, `codebase-recon` present.
+- Final review-fix commit (`Finalize Phase 3 scanner review fixes`):
+  - Unclosed-frontmatter body fallback tightened: when no closing `---` is found, no frontmatter fields are trusted; the opening fence and only the three recognized metadata lines (`name` / `description` / `trigger`) are skipped, so an unknown `key: value` line such as `Usage: run this` becomes the body start (and thus the description/trigger fallback) instead of being swallowed.
+  - Two cap tests (`oversized_after_cap_does_not_set_truncated`, `non_utf8_after_cap_does_not_set_truncated`) were rewritten to put the cap-reaching valid skills and the invalid file in separate roots with a fixed `[root_valid, root_invalid]` order, removing the previous dependence on unspecified `read_dir` ordering; the tests now also assert the second root was actually scanned (`exists=true`, no root error, `skill_count=0`) plus the matching warning.
+  - Added Windows path case-insensitivity coverage: `path_is_within_root` gained a `#[cfg(windows)]` branch that compares component-by-component with ASCII-case-insensitive matching (plus a discriminant check so different component kinds never collide), while non-Windows keeps `Path::starts_with`. New `#[cfg(windows)]` tests confirm same-path-different-case is accepted and similar-prefix-but-different-directory (`C:\foo` vs `C:\foobar`) is rejected.
+  - `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`: exited 0.
+  - `cargo test --manifest-path src-tauri/Cargo.toml`: 32 passed, 0 failed (6 new tests: 4 unclosed-frontmatter cases + 2 Windows path cases; previous 26 retained).
+  - `cargo check --manifest-path src-tauri/Cargo.toml`: exited 0.
+  - `pnpm build`: exited 0.
+  - `git diff --check`: exited 0.
 - `pnpm tauri dev` was NOT run for Phase 3 or the edge-case fix. Native WebView2 pixel-level / interactive UI QA (including 800×600 dual-pane visual confirmation) was NOT performed by automation and remains a manual follow-up. Phase 2 already validated that the Tauri dev runtime launches and renders. Browser `pnpm dev` viewport screenshots for 800×600 / 1280×800 were also NOT taken in this session.
 
 ## Publishing State

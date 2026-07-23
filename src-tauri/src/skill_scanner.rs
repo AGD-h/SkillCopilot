@@ -502,11 +502,66 @@ fn read_skill_bounded(path: &Path) -> Result<(String, Metadata), String> {
 }
 
 /// Returns true when `candidate` is the root itself or a descendant of it.
+///
+/// On Windows the filesystem is case-insensitive, so a candidate that differs
+/// from the root only in ASCII case must still be accepted. We compare
+/// component-by-component (never a raw string prefix, which would let
+/// `C:\foo` match `C:\foobar`).
 fn path_is_within_root(candidate: &Path, root: &Path) -> bool {
-    if candidate == root {
-        return true;
+    #[cfg(windows)]
+    {
+        path_is_within_root_windows(candidate, root)
     }
-    candidate.starts_with(root)
+    #[cfg(not(windows))]
+    {
+        if candidate == root {
+            return true;
+        }
+        candidate.starts_with(root)
+    }
+}
+
+#[cfg(windows)]
+fn path_is_within_root_windows(candidate: &Path, root: &Path) -> bool {
+    use std::ffi::OsStr;
+    use std::os::windows::ffi::OsStrExt;
+
+    fn ascii_bytes(component: &std::path::Component) -> Vec<u8> {
+        let os: &OsStr = component.as_os_str();
+        let mut bytes = Vec::with_capacity(os.len() / 2);
+        for wide in os.encode_wide() {
+            if let Ok(byte) = u8::try_from(wide) {
+                bytes.push(byte.to_ascii_lowercase());
+            } else {
+                // Non-ASCII component: fall back to exact UTF-16LE bytes so a
+                // non-ASCII path can never match a different non-ASCII path.
+                for half in wide.to_le_bytes() {
+                    bytes.push(half);
+                }
+            }
+        }
+        bytes
+    }
+
+    let candidate_components: Vec<_> = candidate.components().collect();
+    let root_components: Vec<_> = root.components().collect();
+
+    if candidate_components.len() < root_components.len() {
+        return false;
+    }
+
+    for (candidate_comp, root_comp) in candidate_components.iter().zip(root_components.iter()) {
+        // Component kinds must align (Prefix vs Prefix, RootDir vs RootDir,
+        // Normal vs Normal, ...). This also prevents a same-bytes collision
+        // between different component kinds.
+        if std::mem::discriminant(candidate_comp) != std::mem::discriminant(root_comp) {
+            return false;
+        }
+        if ascii_bytes(candidate_comp) != ascii_bytes(root_comp) {
+            return false;
+        }
+    }
+    true
 }
 
 struct SkillMeta {
@@ -559,16 +614,22 @@ fn parse_skill(content: &str, parent_dir_name: &str) -> SkillMeta {
                 index += 1;
             }
         } else {
-            // Malformed / unclosed frontmatter: ignore FM fields and skip the
-            // opening fence plus simple key:value lines so body fallback does
-            // not swallow the broken frontmatter text as the description.
+            // Malformed / unclosed frontmatter: do not trust any frontmatter
+            // fields. Skip the opening fence and only the three recognized
+            // metadata lines (name/description/trigger); any other line --
+            // including an unknown `key: value` pair such as `Usage: run
+            // this` -- becomes the body start so it is not swallowed.
             index = 1;
             while index < lines.len() {
-                let trimmed = lines[index].trim_start_matches('\u{feff}').trim();
+                let line = lines[index];
+                let trimmed = line.trim_start_matches('\u{feff}').trim();
                 if trimmed.is_empty() || trimmed.starts_with('#') {
                     break;
                 }
-                if parse_kv(lines[index]).is_some() {
+                let is_known_metadata = parse_kv(line)
+                    .map(|(key, _)| matches!(key.as_str(), "name" | "description" | "trigger"))
+                    .unwrap_or(false);
+                if is_known_metadata {
                     index += 1;
                     continue;
                 }
@@ -907,39 +968,76 @@ mod tests {
 
     #[test]
     fn oversized_after_cap_does_not_set_truncated() {
-        let root = unique_temp_dir("cap-oversize");
-        write_n_skills(&root, 2);
-        let big = "a".repeat((MAX_FILE_SIZE as usize) + 8);
-        write_file(&root.join("zzz-huge").join("SKILL.md"), &big);
+        // Put the cap-reaching valid skills and the oversized file in separate
+        // roots so the result does not depend on read_dir ordering within a
+        // single directory.
+        let root_valid = unique_temp_dir("cap-oversize-valid");
+        write_n_skills(&root_valid, 2);
 
-        let result = scan_with_roots_limited("workspace", vec![(root.clone(), "workspace")], 2);
+        let root_invalid = unique_temp_dir("cap-oversize-invalid");
+        let big = "a".repeat((MAX_FILE_SIZE as usize) + 8);
+        write_file(&root_invalid.join("huge").join("SKILL.md"), &big);
+
+        let result = scan_with_roots_limited(
+            "workspace",
+            vec![
+                (root_valid.clone(), "workspace"),
+                (root_invalid.clone(), "user"),
+            ],
+            2,
+        );
         assert_eq!(result.skills.len(), 2);
         assert!(!result.truncated);
+        // The second root was actually scanned (not skipped by the limit): it
+        // exists, has no root-level error, but contributed 0 valid skills.
+        assert!(result.roots[1].exists);
+        assert!(result.roots[1].error.is_none());
+        assert_eq!(result.roots[1].skill_count, 0);
         assert!(result.warning_count >= 1);
         assert!(result
             .warnings
             .iter()
             .any(|warning| warning.contains("larger than 1 MiB")));
 
-        std::fs::remove_dir_all(&root).ok();
+        std::fs::remove_dir_all(&root_valid).ok();
+        std::fs::remove_dir_all(&root_invalid).ok();
     }
 
     #[test]
     fn non_utf8_after_cap_does_not_set_truncated() {
-        let root = unique_temp_dir("cap-utf8");
-        write_n_skills(&root, 2);
-        write_bytes(&root.join("zzz-bad").join("SKILL.md"), &[0xFF, 0xFE, 0xFD]);
+        // Separate roots remove the read_dir ordering dependency: the valid
+        // skills reach the cap first, then the non-UTF-8 file is scanned in a
+        // distinct root and only emits a warning.
+        let root_valid = unique_temp_dir("cap-utf8-valid");
+        write_n_skills(&root_valid, 2);
 
-        let result = scan_with_roots_limited("workspace", vec![(root.clone(), "workspace")], 2);
+        let root_invalid = unique_temp_dir("cap-utf8-invalid");
+        write_bytes(
+            &root_invalid.join("bad").join("SKILL.md"),
+            &[0xFF, 0xFE, 0xFD],
+        );
+
+        let result = scan_with_roots_limited(
+            "workspace",
+            vec![
+                (root_valid.clone(), "workspace"),
+                (root_invalid.clone(), "user"),
+            ],
+            2,
+        );
         assert_eq!(result.skills.len(), 2);
         assert!(!result.truncated);
+        assert!(result.roots[1].exists);
+        assert!(result.roots[1].error.is_none());
+        assert_eq!(result.roots[1].skill_count, 0);
         assert!(result.warning_count >= 1);
         assert!(result
             .warnings
             .iter()
             .any(|warning| warning.contains("non-UTF-8")));
 
-        std::fs::remove_dir_all(&root).ok();
+        std::fs::remove_dir_all(&root_valid).ok();
+        std::fs::remove_dir_all(&root_invalid).ok();
     }
 
     #[test]
@@ -1045,6 +1143,48 @@ mod tests {
     }
 
     #[test]
+    fn unclosed_frontmatter_keeps_unknown_colon_line_as_body() {
+        // `Usage: run this` contains a colon but is not a recognized metadata
+        // field, so it must become the body start rather than be swallowed.
+        let content = "---\nUsage: run this\n";
+        let meta = parse_skill(content, "parent");
+        assert_eq!(meta.name, "parent");
+        assert_eq!(meta.description, "Usage: run this");
+        assert_eq!(meta.trigger, "Usage: run this");
+    }
+
+    #[test]
+    fn unclosed_frontmatter_ignores_known_metadata_then_keeps_body() {
+        // `name:` is a recognized metadata field and is skipped, but the
+        // following unknown `Usage: run this` line is the body start.
+        let content = "---\nname: example\nUsage: run this\n";
+        let meta = parse_skill(content, "parent");
+        assert_eq!(meta.name, "parent");
+        assert_eq!(meta.description, "Usage: run this");
+        assert_eq!(meta.trigger, "Usage: run this");
+    }
+
+    #[test]
+    fn unclosed_frontmatter_keeps_arbitrary_custom_key_as_body() {
+        // An unknown `custom: value` pair is body, not frontmatter.
+        let content = "---\ncustom: value\n";
+        let meta = parse_skill(content, "parent");
+        assert_eq!(meta.name, "parent");
+        assert_eq!(meta.description, "custom: value");
+        assert_eq!(meta.trigger, "custom: value");
+    }
+
+    #[test]
+    fn closed_frontmatter_still_parses_known_fields() {
+        // Regression guard: normal closed frontmatter behavior is unchanged.
+        let content = "---\nname: Real\ndescription: \"parsed\"\ntrigger: 'now'\n---\n\nBody.\n";
+        let meta = parse_skill(content, "parent");
+        assert_eq!(meta.name, "Real");
+        assert_eq!(meta.description, "parsed");
+        assert_eq!(meta.trigger, "now");
+    }
+
+    #[test]
     fn bom_and_empty_frontmatter_fields_are_handled() {
         let content = "\u{feff}---\nname: \ndescription: \"\"\n---\n\nUseful body text.\n";
         let meta = parse_skill(content, "parent");
@@ -1112,5 +1252,33 @@ mod tests {
         assert!(result.warnings_truncated);
 
         std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_path_case_insensitivity_accepts_same_path_different_case() {
+        // Same path, differing only in ASCII case, must be accepted on Windows.
+        let root = PathBuf::from(r"C:\SkillCopilot\.cursor\skills");
+        let candidate = PathBuf::from(r"c:\skillcopilot\.CURSOR\skills\sub\SKILL.md");
+        assert!(path_is_within_root(&candidate, &root));
+
+        // Candidate identical to root (different case) is also within root.
+        let candidate_same = PathBuf::from(r"c:\skillcopilot\.cursor\skills");
+        assert!(path_is_within_root(&candidate_same, &root));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_path_case_insensitivity_rejects_different_directory() {
+        // Similar string prefix but a different directory component must be
+        // rejected: `C:\foo` must not match `C:\foobar`.
+        let root = PathBuf::from(r"C:\foo");
+        let candidate_sibling = PathBuf::from(r"C:\foobar\SKILL.md");
+        assert!(!path_is_within_root(&candidate_sibling, &root));
+
+        // A genuinely different directory is rejected regardless of case.
+        let root_two = PathBuf::from(r"C:\SkillCopilot\.cursor\skills");
+        let candidate_other = PathBuf::from(r"C:\SkillCopilot\.agents\skills\SKILL.md");
+        assert!(!path_is_within_root(&candidate_other, &root_two));
     }
 }
