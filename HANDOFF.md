@@ -42,6 +42,7 @@
 - Frontend pages: Dashboard / Skills / Agents / Settings (sidebar navigation, no react-router).
 - Official Tauri template greet/logo frontend example has been removed from `src/`.
 - Phase 2 implemented: Dashboard reads real local workspace status via Tauri, with mock fallback.
+- Phase 3 implemented: Skills page reads a real local `SKILL.md` scan via Tauri, with mock fallback.
 - SQLite has not been added.
 
 ## Scaffold Verification Evidence
@@ -84,6 +85,32 @@
   - The dev process tree was then stopped; port 1420 was released; no residual dev/GUI processes remained.
 - Honest limitations of that session: automation cannot capture the native WebView2 window, so the `Real local data` badge/text and click-through across the four pages were NOT confirmed by pixel-level or interactive visual QA. This does not block Phase 2 code from shipping; it is retained as a follow-up manual UI QA item.
 
+## Phase 3 Implementation
+- Added a dedicated read-only scanner module `src-tauri/src/skill_scanner.rs`; `src-tauri/src/lib.rs` only declares `mod skill_scanner`, keeps a thin `#[tauri::command] scan_local_skills(request)` wrapper, and registers it alongside `greet` and `read_workspace_status` in `generate_handler!`.
+- Command `scan_local_skills(request: { rootPath })` returns `SkillScanResult { workspaceRoot, roots, skills, warnings, truncated, scannedAt }` (serde `rename_all = "camelCase"`); it returns a readable `Err` only when `rootPath` is empty and otherwise never panics.
+- `SkillRootStatus { path, source(workspace|user), exists, skillCount, error }` and `SkillItem { id, name, description, path, relativePath, sourceRoot, trigger, body, updatedAt, tag="local" }`. `id` is the canonicalized absolute path (verbatim `\\?\` prefix stripped) for a stable, non-random identity.
+- Default scan roots (a missing root is `exists=false`, never a global failure; one failing root never blocks the others):
+  1. `<workspace>\.agents\skills` (source=workspace)
+  2. `<workspace>\.cursor\skills` (source=workspace)
+  3. `%USERPROFILE%\.codex\skills` (source=user; falls back to `HOME` for future macOS)
+  4. `%USERPROFILE%\.cursor\skills` (source=user)
+- Scan behavior: recursive (max depth 8), only files named `SKILL.md` (Windows case-insensitive), skips `.git` / `node_modules` / `target`, does not follow symlinks/junctions, de-duplicates by canonical path, caps at 500 skills (`truncated=true` beyond), skips single files larger than 1 MiB and non-UTF-8 files with a warning, caps warnings at 100, and returns skills sorted by name then path.
+- Parse rules (no YAML dependency): read a top `---` frontmatter block for simple single-line `name` / `description` / `trigger` (matched paired quotes stripped); `name` falls back to the parent directory name; `description` falls back to the first non-empty, non-heading paragraph; `trigger` falls back to `description`; summaries are char-safe truncated to 200 chars so multi-byte UTF-8 is never split.
+- Frontend: `src/lib/workspaceApi.ts` adds `scanLocalSkills(rootPath)`; `src/types.ts` adds `SkillScanResult` / `SkillRootStatus` / `LocalSkillItem` / `DataSourceStatus` matching the Rust camelCase shapes (no `any`).
+- Skills page (`src/components/SkillsPage.tsx`) is now self-contained: it scans on mount for `E:\SkillCopilot`, has a refresh button, guards against out-of-order/unmounted responses via a request sequence, and shows explicit states: loading (`Loading local skills`), success (`Real local data · N skills`), fallback (`Fallback mock data · N skills` + error callout, never labeled real), partial (real data + short "some roots unavailable" callout), empty (real success with 0 skills: 未在默认扫描目录中找到 SKILL.md), and search-empty (没有匹配的 Skill). Search covers name/description/trigger/path/relativePath; the inspector shows name, description, absolute path, relative path, source root, trigger, updatedAt (local time), and full read-only Markdown body (no Markdown renderer added); copy-path copies the absolute path and copy-body copies the unmodified body.
+- Settings (`src/components/SettingsPage.tsx`) copy updated to Phase 3; data sources now distinguish `real` vs `planned` (Skill roots listed as real, `.cursor/rules/` and copilot instructions as planned Phase 4). Workspace picker remains unimplemented; root stays fixed to `E:\SkillCopilot`.
+- No new dependencies; no changes to `package.json`, `Cargo.toml`, `tauri.conf.json`, or capabilities; no SQLite; the scanner never writes to disk.
+
+## Phase 3 Verification
+- `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`: exited 0 after applying `cargo fmt` to the new scanner file.
+- `cargo test --manifest-path src-tauri/Cargo.toml`: 9 passed, 0 failed (frontmatter parse; parent-dir/first-paragraph fallback; UTF-8-safe Chinese truncation; recursive nested discovery; README.md ignored; missing root `exists=false` without panic; oversized file skipped with warning; stable name-then-path sort; canonical-path de-duplication). Temp dirs use `std::env::temp_dir()` + a unique suffix and are cleaned up; no real user Skill files are modified.
+- `cargo check --manifest-path src-tauri/Cargo.toml`: exited 0.
+- `pnpm build` (`tsc && vite build`): exited 0 (39 modules transformed).
+- `pnpm tauri info`: ran successfully (Tauri 2.11.5, WebView2 150.0.4078.83, rustc 1.97.1, React + Vite).
+- `git diff --check`: exited 0 (only informational CRLF→LF normalization notices per `.gitattributes`; no whitespace errors).
+- Real read-only scan of `E:\SkillCopilot`: a temporary `#[test]` (read-only, asserted existence, modified nothing, removed before commit) reported 13 skills, `truncated=false`, `0` warnings; `codebase_recon_found=true`. Root results: workspace `.agents\skills` and `.cursor\skills` `exists=false`; user `.codex\skills` `exists=true` with 13 skills; user `.cursor\skills` `exists=false`. This confirms `C:\Users\asus\.codex\skills\codebase-recon\SKILL.md` is discovered by the default roots.
+- `pnpm tauri dev` was NOT run for Phase 3. The native WebView2 window cannot be captured by automation here, so pixel-level/interactive UI QA of the Skills page (badge text, list/inspector, copy buttons) was NOT performed and remains a manual follow-up. Phase 2 already validated that the Tauri dev runtime launches and renders.
+
 ## Publishing State
 - License: MIT, recorded in `LICENSE`, `package.json`, and `src-tauri/Cargo.toml`.
 - Git repository initialized on branch `main` with the scaffold as the first commit.
@@ -91,9 +118,11 @@
 
 ## Pending Work
 - Phase 2 done: Tauri read-only access to `HANDOFF.md`, `AGENTS.md`, and `git status` is implemented and Dashboard uses real data with mock fallback.
-- Phase 3: scan local Skill files and show a real Skill list with read-only detail on the Skills page.
+- Phase 3 done: local `SKILL.md` scanning is implemented and the Skills page shows a real, searchable Skill list with read-only detail (mock fallback when the Tauri runtime is unavailable).
+- Phase 4 is the next phase: scan Agent configuration files and show real Agent entries with copyable prompts on the Agents page.
 - Settings workspace folder picker is still not implemented (root fixed to `E:\SkillCopilot`).
-- Verify `pnpm tauri dev` renders the real Dashboard in an actual window when a display is available.
+- Verify `pnpm tauri dev` renders the real Dashboard and Skills page in an actual window when a display is available (manual UI QA still pending).
+- SQLite has still NOT been added and must not be added until the Phase 5 evaluation concludes it is needed.
 - For normal development, open a fresh PowerShell or Cursor terminal so the Rust PATH is loaded.
 
 ## Temporary Validation Project
@@ -115,7 +144,7 @@
 - If an installer requires administrator permission, a graphical installer, or a reboot, pause and give manual instructions.
 
 ## Last Known Next Step
-- Phase 3：扫描本地 Skill 文件并在 Skills 页展示真实 Skill 列表与只读详情。
+- Phase 4：扫描 Agent 配置文件并在 Agents 页展示真实条目与可复制提示词。
 - Do not add SQLite until Phase 5 evaluation concludes it is required.
 
 ## Verified Tool Versions

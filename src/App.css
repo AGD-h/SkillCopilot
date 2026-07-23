@@ -606,10 +606,19 @@ button:disabled {
 
 .toolbar {
   margin-bottom: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 .search-field {
   display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.toolbar .btn {
+  flex: 0 0 auto;
 }
 
 .search-field input {
@@ -741,6 +750,11 @@ button:disabled {
 .tag-docs {
   background: #ecfdf3;
   color: #067647;
+}
+
+.tag-local {
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .color-dot {
@@ -1006,6 +1020,18 @@ button:disabled {
   border: 1px solid #fed7aa;
 }
 
+.source-status.is-real {
+  background: #ecfdf3;
+  color: var(--success);
+  border-color: #bbf7d0;
+}
+
+.source-status.is-planned {
+  background: #fff7ed;
+  color: #9a3412;
+  border-color: #fed7aa;
+}
+
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1163,10 +1189,17 @@ button:disabled {
 
   .status-chip,
   .badge-mock,
-  .source-status {
+  .source-status,
+  .source-status.is-planned {
     background: #3b2a14;
     color: #fdba74;
     border-color: #7c4a1e;
+  }
+
+  .source-status.is-real {
+    background: #13251a;
+    color: #4ade80;
+    border-color: #166534;
   }
 
   .callout-warning {

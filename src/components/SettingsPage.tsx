@@ -19,19 +19,20 @@ export function SettingsPage({
         <div className="page-header-text">
           <h1 className="page-title">Settings</h1>
           <p className="page-subtitle">
-            本地数据来源与阶段门禁说明（Phase 2 已开始读取真实文件）。
+            本地数据来源与阶段门禁说明（Phase 3 已只读扫描本地 Skills）。
           </p>
         </div>
         <span className="badge badge-mock">Workspace 选择器未实现</span>
       </header>
 
       <div className="callout callout-warning" role="note">
-        <div className="callout-title">Phase 2：已部分接入真实本地状态</div>
+        <div className="callout-title">Phase 3：已接入真实本地 Skill 扫描</div>
         <p className="callout-body">
-          Dashboard 现在通过 Tauri command 只读读取 HANDOFF.md、AGENTS.md 与{" "}
-          <code>git status --short --branch</code>，失败时回退到 mock。但
-          Workspace 仍固定为 <code>E:\SkillCopilot</code>，文件夹选择器、Skill
-          扫描与 Agent 解析尚未实现，本页下方列表仍为 mock 说明。
+          Dashboard 通过 Tauri command 只读读取 HANDOFF.md、AGENTS.md 与{" "}
+          <code>git status --short --branch</code>；Skills 页现在只读扫描本地{" "}
+          <code>SKILL.md</code>（失败时回退到 mock）。但 Workspace 仍固定为{" "}
+          <code>E:\SkillCopilot</code>，文件夹选择器尚未实现，Agent 解析留待
+          Phase 4。下方数据来源已区分 real 与 planned。
         </p>
       </div>
 
@@ -47,7 +48,7 @@ export function SettingsPage({
                 {workspace.path}
               </div>
               <div className="stat-muted">
-                状态：固定绑定（Dashboard 已按此路径读取真实文件）
+                状态：固定绑定（Dashboard 与 Skills 已按此路径读取真实文件）
               </div>
             </div>
             <div className="settings-action">
@@ -66,6 +67,10 @@ export function SettingsPage({
         <h2 id="data-sources" className="section-title">
           Data Sources
         </h2>
+        <p className="hint-text">
+          默认 Skill 扫描根（用户级以 <code>%USERPROFILE%</code>{" "}
+          表示；工作区级相对当前 Workspace）。
+        </p>
         <ul className="source-list">
           {dataSources.map((item) => (
             <li key={item.path} className="source-item">
@@ -73,7 +78,9 @@ export function SettingsPage({
                 <div className="mono wrap" title={item.path}>
                   {item.path}
                 </div>
-                <span className="source-status">mock</span>
+                <span className={`source-status is-${item.status}`}>
+                  {item.status === "real" ? "real" : "planned"}
+                </span>
               </div>
               <div className="stat-muted">{item.note}</div>
             </li>

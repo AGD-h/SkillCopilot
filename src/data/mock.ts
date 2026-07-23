@@ -12,11 +12,11 @@ export const mockWorkspace: WorkspaceInfo = {
   branch: "main",
   gitSummary: "main · synced",
   workingTree: "Working tree clean",
-  phaseLabel: "MVP Phase 1 complete",
-  phaseFocus: "UI polish · mock data",
+  phaseLabel: "MVP Phase 3 complete",
+  phaseFocus: "本地 Skill 扫描 · 真实数据",
   currentGoal: "本地桌面 AI 项目主脑 + Skill / Agent 管理器",
   nextStep:
-    "Phase 2：实现 Tauri 只读读取 HANDOFF.md / AGENTS.md / git status，并让 Dashboard 使用真实数据。",
+    "Phase 4：扫描 Agent 配置文件并在 Agents 页展示真实条目与可复制提示词。",
   nextStepSource: "HANDOFF.md / docs/product/mvp-definition.md（mock）",
   constraints: [
     "不添加 SQLite",
@@ -37,13 +37,13 @@ export const mockPhases: TaskPhase[] = [
   {
     id: "p2",
     name: "Phase 2",
-    status: "pending",
+    status: "done",
     summary: "只读 HANDOFF / AGENTS / git status",
   },
   {
     id: "p3",
     name: "Phase 3",
-    status: "pending",
+    status: "done",
     summary: "扫描本地 Skills",
   },
   {
@@ -208,11 +208,56 @@ export const mockAgents: AgentItem[] = [
 ];
 
 export const mockDataSources: DataSourceItem[] = [
-  { path: "HANDOFF.md", note: "项目交接状态与下一步" },
-  { path: "AGENTS.md", note: "跨工具会话启动规则" },
-  { path: "docs/product/mvp-definition.md", note: "MVP 产品定义" },
-  { path: ".cursor/rules/", note: "Cursor 主脑规则" },
-  { path: ".github/copilot-instructions.md", note: "GitHub Copilot 说明" },
+  {
+    path: "HANDOFF.md",
+    note: "项目交接状态与下一步（Phase 2 已只读读取）",
+    status: "real",
+  },
+  {
+    path: "AGENTS.md",
+    note: "跨工具会话启动规则（Phase 2 已只读读取）",
+    status: "real",
+  },
+  {
+    path: "git status --short --branch",
+    note: "只读 Git 分支与工作树状态（Phase 2）",
+    status: "real",
+  },
+  {
+    path: "<workspace>\\.agents\\skills",
+    note: "工作区级 Skill 根：SKILL.md（Phase 3 已扫描）",
+    status: "real",
+  },
+  {
+    path: "<workspace>\\.cursor\\skills",
+    note: "工作区级 Skill 根：SKILL.md（Phase 3 已扫描）",
+    status: "real",
+  },
+  {
+    path: "%USERPROFILE%\\.codex\\skills",
+    note: "用户级 Skill 根：SKILL.md（Phase 3 已扫描）",
+    status: "real",
+  },
+  {
+    path: "%USERPROFILE%\\.cursor\\skills",
+    note: "用户级 Skill 根：SKILL.md（Phase 3 已扫描）",
+    status: "real",
+  },
+  {
+    path: ".cursor/rules/",
+    note: "Cursor 主脑规则（Phase 4 Agent 解析）",
+    status: "planned",
+  },
+  {
+    path: ".github/copilot-instructions.md",
+    note: "GitHub Copilot 说明（Phase 4 Agent 解析）",
+    status: "planned",
+  },
+  {
+    path: "docs/product/mvp-definition.md",
+    note: "MVP 产品定义（暂未在应用内解析）",
+    status: "planned",
+  },
 ];
 
 export const mockPhaseGates: string[] = [

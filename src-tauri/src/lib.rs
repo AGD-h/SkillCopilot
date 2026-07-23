@@ -1,13 +1,25 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+mod skill_scanner;
+
 use std::path::Path;
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
+use skill_scanner::{SkillScanRequest, SkillScanResult};
+
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
+}
+
+/// Read-only scan of the default local Skill roots for the given workspace.
+/// Thin wrapper over [`skill_scanner::run_scan`]; all scanning logic lives in
+/// the `skill_scanner` module.
+#[tauri::command]
+fn scan_local_skills(request: SkillScanRequest) -> Result<SkillScanResult, String> {
+    skill_scanner::run_scan(&request.root_path)
 }
 
 #[derive(Deserialize)]
@@ -269,7 +281,11 @@ fn extract_section(content: &str, title: &str) -> Vec<String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, read_workspace_status])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            read_workspace_status,
+            scan_local_skills
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

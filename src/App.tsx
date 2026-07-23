@@ -10,7 +10,6 @@ import {
   mockPhaseGates,
   mockPhases,
   mockSafetyBoundaries,
-  mockSkills,
   mockWorkspace,
 } from "./data/mock";
 import { copyText } from "./lib/clipboard";
@@ -20,9 +19,6 @@ import "./App.css";
 function App() {
   const [page, setPage] = useState<PageId>("dashboard");
   const [toast, setToast] = useState<ToastState | null>(null);
-  const [selectedSkillId, setSelectedSkillId] = useState(
-    mockSkills[0]?.id ?? "",
-  );
   const [selectedAgentId, setSelectedAgentId] = useState(
     mockAgents[0]?.id ?? "",
   );
@@ -76,9 +72,7 @@ function App() {
         ) : null}
         {page === "skills" ? (
           <SkillsPage
-            skills={mockSkills}
-            selectedId={selectedSkillId}
-            onSelect={setSelectedSkillId}
+            rootPath={mockWorkspace.path}
             onCopy={handleCopy}
             toast={toast}
           />

@@ -46,9 +46,44 @@ export interface AgentItem {
   prompt: string;
 }
 
+export type DataSourceStatus = "real" | "planned";
+
 export interface DataSourceItem {
   path: string;
   note: string;
+  status: DataSourceStatus;
+}
+
+export type SkillRootSource = "workspace" | "user";
+
+export interface SkillRootStatus {
+  path: string;
+  source: SkillRootSource;
+  exists: boolean;
+  skillCount: number;
+  error?: string | null;
+}
+
+export interface LocalSkillItem {
+  id: string;
+  name: string;
+  description: string;
+  path: string;
+  relativePath: string;
+  sourceRoot: string;
+  trigger: string;
+  body: string;
+  updatedAt: string;
+  tag: "local";
+}
+
+export interface SkillScanResult {
+  workspaceRoot: string;
+  roots: SkillRootStatus[];
+  skills: LocalSkillItem[];
+  warnings: string[];
+  truncated: boolean;
+  scannedAt: string;
 }
 
 export interface ToastState {
