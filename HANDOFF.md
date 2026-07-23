@@ -4,11 +4,11 @@
 - SkillCopilot is a local-first AI project main-brain and Skill/Agent manager, published as the public `AGD-h/SkillCopilot` GitHub repository.
 - First target platform: Windows 10/11; keep configuration compatible with later macOS work.
 - Stack: Tauri 2, React, TypeScript, Rust, Vite, pnpm.
-- Phases 1–5 are complete. Phase 5 concluded that SQLite is **not** needed for the current MVP; see `docs/architecture/sqlite-evaluation.md`.
-- Workspace folder selection and localStorage persistence are implemented (official Tauri Dialog; key `skillcopilot.workspaceRoot`). No hardcoded runtime workspace path.
+- Phases 1–5 and Workspace picker are complete. SQLite is **not** needed now (`docs/architecture/sqlite-evaluation.md`).
+- v0.1.0 Release Candidate prep is done on this machine: regression + `pnpm tauri build` MSI/NSIS + release exe smoke. See `docs/release/v0.1.0-checklist.md`.
 - Dashboard shows local file text as-is: do not auto-translate `HANDOFF.md`, `AGENTS.md`, or Skill body content in the frontend.
 - MVP product definition is recorded at `docs/product/mvp-definition.md`.
-- Next: full MVP regression, installer verification, and release prep. Still do not introduce SQLite.
+- Next: user manual install/uninstall acceptance; after that, create `v0.1.0` tag and GitHub Release. Still do not introduce SQLite.
 
 ## Recommended Development Environment
 - Main development environment: Windows-native PowerShell/CMD.
@@ -224,16 +224,30 @@
 - Dev processes stopped after QA; port 1420 released.
 - Pre-push review fix: honesty for localStorage write/clear failures; stricter Dialog array acceptance; HANDOFF verification wording corrected after re-running `git diff --check`.
 
+## v0.1.0 Release Candidate
+- README.md / README.zh-CN.md / README.zh-TW.md updated to describe the real MVP (no longer “scaffold only”).
+- Added `CHANGELOG.md` (`0.1.0 - Unreleased`), `docs/release/v0.1.0-checklist.md`, `docs/release/v0.1.0-release-notes.md` (Draft).
+- Blocking fix included: Skills/Agents empty-state early return no longer runs hooks after a conditional return (React “fewer hooks” crash when opening those pages without a Workspace).
+- Command exits this session: `pnpm install --frozen-lockfile` 0; `pnpm build` 0; `cargo fmt --check` 0; `cargo test` 0 (**70 passed**); `cargo check` 0; `pnpm tauri info` 0; `pnpm tauri build` 0.
+- Browser Playwright (out-of-repo): unset Workspace, desktop-only pick toast, localStorage restore, locale keeps path, forget clears key, viewports 800/1280/1920, single `role="status"`.
+- `pnpm tauri dev`: Vite ready; Rust `Finished dev`; `skillcopilot.exe` launched. Native Dialog not automated. Process stop for cleanup may yield non-zero — not a build failure.
+- Production artifacts (Cargo target dir was the agent sandbox cache on this host):
+  - `skillcopilot.exe` 9650176 bytes SHA256 `AD0600343546768C53D63F29E890C8CA08BB55411FD60419897ED759E859C89A` NotSigned
+  - `SkillCopilot_0.1.0_x64_en-US.msi` 3211264 bytes SHA256 `8FBBCA55F77EB529C63BFA25B7B7FBB75FE74C76800F5D29CCF0C27514784BA2` NotSigned
+  - `SkillCopilot_0.1.0_x64-setup.exe` 2108491 bytes SHA256 `41C824B10C77530E277CAF1752DBDD5E1ECFE2327A5C6C2872334F3078439D27` NotSigned
+- Release exe Start-Process smoke: process stayed running, WebView2 present; no pixel-level UI claim. Installers were **not** auto-installed.
+- CSP remains `null` (unchanged). Still no SQLite. Binaries not committed.
+
 ## Publishing State
 - License: MIT, recorded in `LICENSE`, `package.json`, and `src-tauri/Cargo.toml`.
 - Git repository initialized on branch `main` with the scaffold as the first commit.
 - Public repository: `https://github.com/AGD-h/SkillCopilot`, pushed via authenticated GitHub CLI.
 
 ## Pending Work
-- Phase 2–5 done (including Phase 5 written SQLite evaluation).
-- Workspace folder selection + localStorage persistence done.
-- Next: complete MVP regression, installer verification, and release preparation. Still do not introduce SQLite.
-- Manual UI QA of native folder dialog cancel/select/forget/restart restore when a display is available.
+- User manual NSIS/MSI install + SmartScreen observation + uninstall acceptance (`docs/release/v0.1.0-checklist.md`).
+- After acceptance: create `v0.1.0` tag and GitHub Release; attach MSI/NSIS; paste SHA-256; move CHANGELOG off `Unreleased`.
+- Native Dialog cancel/select/restart/forget still 待人工验证.
+- Still do not introduce SQLite.
 - For normal development, open a fresh PowerShell or Cursor terminal so the Rust PATH is loaded.
 
 ## Temporary Validation Project
@@ -255,7 +269,7 @@
 - If an installer requires administrator permission, a graphical installer, or a reboot, pause and give manual instructions.
 
 ## Last Known Next Step
-- 完整 MVP 回归、安装包验证与发布准备；仍不引入 SQLite。
+- 用户人工安装/卸载验收；验收通过后创建 v0.1.0 tag 与 GitHub Release；仍不引入 SQLite。
 
 ## Verified Tool Versions
 - Windows: Windows 11/10.0.26200 x64.

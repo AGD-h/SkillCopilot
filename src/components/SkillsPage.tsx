@@ -99,6 +99,23 @@ export function SkillsPage({
     };
   }, [runScan]);
 
+  const isFallback = loadState === "fallback";
+  const skills: LocalSkillItem[] = !rootPath
+    ? []
+    : isFallback
+      ? fallbackSkills
+      : (result?.skills ?? []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return skills;
+    return skills.filter((skill) => {
+      const hay =
+        `${skill.name} ${skill.description} ${skill.trigger} ${skill.path} ${skill.relativePath}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [query, skills]);
+
   if (!rootPath) {
     return (
       <div className="page skills-page">
@@ -126,21 +143,6 @@ export function SkillsPage({
       </div>
     );
   }
-
-  const isFallback = loadState === "fallback";
-  const skills: LocalSkillItem[] = isFallback
-    ? fallbackSkills
-    : (result?.skills ?? []);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return skills;
-    return skills.filter((skill) => {
-      const hay =
-        `${skill.name} ${skill.description} ${skill.trigger} ${skill.path} ${skill.relativePath}`.toLowerCase();
-      return hay.includes(q);
-    });
-  }, [query, skills]);
 
   const selected =
     filtered.find((skill) => skill.id === selectedId) ?? filtered[0] ?? null;

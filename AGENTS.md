@@ -21,6 +21,7 @@ If `HANDOFF.md` conflicts with older assumptions, follow `HANDOFF.md`.
 - Product: local-first AI project main-brain and Skill/Agent manager.
 - Phases 1–5 are complete. Phase 5 concluded that SQLite is not needed for the current MVP.
 - Workspace folder selection uses the official Tauri Dialog plugin; the path preference is stored in localStorage key `skillcopilot.workspaceRoot`.
+- v0.1.0 Release Candidate docs live under `docs/release/`; next gate is manual installer acceptance before tag/Release.
 - Keep source files as the authority; do not add SQLite unless a revisit trigger in `docs/architecture/sqlite-evaluation.md` is met and a new written conclusion says so.
 
 ## Collaboration Rules

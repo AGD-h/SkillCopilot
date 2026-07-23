@@ -95,6 +95,23 @@ export function AgentsPage({
     };
   }, [runScan]);
 
+  const isFallback = loadState === "fallback";
+  const agents = !rootPath
+    ? []
+    : isFallback
+      ? fallbackAgents
+      : (result?.agents ?? []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return agents;
+    return agents.filter((agent) => {
+      const hay =
+        `${agent.name} ${agent.role} ${agent.path} ${agent.relativePath} ${agent.sourceKind} ${agent.promptBody}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [agents, query]);
+
   if (!rootPath) {
     return (
       <div className="page agents-page">
@@ -122,19 +139,6 @@ export function AgentsPage({
       </div>
     );
   }
-
-  const isFallback = loadState === "fallback";
-  const agents = isFallback ? fallbackAgents : (result?.agents ?? []);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return agents;
-    return agents.filter((agent) => {
-      const hay =
-        `${agent.name} ${agent.role} ${agent.path} ${agent.relativePath} ${agent.sourceKind} ${agent.promptBody}`.toLowerCase();
-      return hay.includes(q);
-    });
-  }, [agents, query]);
 
   const selected =
     filtered.find((agent) => agent.id === selectedId) ??

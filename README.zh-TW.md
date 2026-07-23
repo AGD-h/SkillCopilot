@@ -2,9 +2,47 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md) | 繁體中文
 
-SkillCopilot 是一款開源桌面應用程式,優先支援 Windows 10/11,後續將支援 macOS。
+SkillCopilot 是本機優先的桌面應用程式，用於 AI 專案交接與 Skill / Agent 管理：查看目前 Git 與 HANDOFF 狀態，瀏覽可重用 Skill，並將 Agent 提示詞複製到 Cursor、Copilot 等工具中使用。
 
-本儲存庫目前僅包含經過驗證的應用程式鷹架,產品功能與 SQLite 整合尚未開始。
+優先支援 Windows 10/11；設定保留後續 macOS 相容，但尚未完成正式驗證。
+
+## 目前 MVP 已實作
+
+- **儀表板**：唯讀讀取綁定工作區的 HANDOFF.md、AGENTS.md 與 Git 狀態
+- **Skills**：掃描本機 `SKILL.md`，搜尋、唯讀詳情、複製路徑/正文
+- **Agents**：掃描專案 Agent 設定（`AGENTS.md`、Cursor `.mdc`、Copilot 指令），搜尋、唯讀詳情、複製提示詞
+- **Workspace 選擇**：系統原生資料夾對話框；路徑記憶在 `localStorage`（`skillcopilot.workspaceRoot`）
+- **介面語言**：简体中文 / English / 繁體中文（來源檔案保持原文，不做自動翻譯）
+
+## 本機優先與隱私
+
+- 不上傳專案內容
+- 不執行所選工作區中的指令碼
+- 不修改掃描到的 Skill / Agent 來源檔案
+- 目前無模型 API、無遙測、無帳號體系
+- 明確不引入 SQLite，見 `docs/architecture/sqlite-evaluation.md`
+
+## Workspace 與 Skill 來源
+
+**綁定工作區後：**
+
+- `HANDOFF.md`、`AGENTS.md`、Git 狀態
+- 工作區 Skill 根（如 `.agents/skills`、`.cursor/skills`）
+- Agent 來源：`AGENTS.md`、`.cursor/rules/**/*.mdc`、`.github/copilot-instructions.md`
+
+**使用者級 Skill 根（Skills 頁一併掃描）：**
+
+- `%USERPROFILE%\.codex\skills`
+- `%USERPROFILE%\.cursor\skills`
+
+## 使用方式
+
+1. 開啟 SkillCopilot
+2. 選擇本機專案資料夾
+3. 在儀表板核對狀態，在 Skills / Agents 中瀏覽並複製所需內容
+4. 在設定中變更或忘記 Workspace，並切換介面語言
+
+「忘記 Workspace」只清除本機偏好，不會刪除專案目錄中的任何檔案。
 
 ## 技術棧
 
@@ -14,61 +52,60 @@ SkillCopilot 是一款開源桌面應用程式,優先支援 Windows 10/11,後續
 - Vite
 - pnpm
 
-## Windows 前置需求
+## Windows 開發
 
-請使用 Windows 原生的 PowerShell 或命令提示字元進行 Windows 桌面開發,不要在 WSL 中建置 Windows 版 Tauri 應用程式。
+請使用 Windows 原生 PowerShell 或命令提示字元，不要用 WSL 作為 Windows Tauri 主建置環境。
 
-所需工具:
+所需工具：
 
-- Node.js `24.18.0`(見 `.node-version`)
-- pnpm `11.15.1`(見 `package.json`)
-- Rust stable,主機目標為 `x86_64-pc-windows-msvc`
-- Visual Studio 2022 建置工具(含「使用 C++ 的桌面開發」工作負載)
+- Node.js `24.18.0`（見 `.node-version`）
+- pnpm `11.15.1`（見 `package.json`）
+- Rust stable，`x86_64-pc-windows-msvc`
+- Visual Studio 2022 建置工具（含 C++ 桌面開發）
 - Windows SDK 與 Microsoft Edge WebView2 執行階段
-
-安裝工具後請開啟一個新的終端機。在 Windows 上確認 Rust 使用的是 MSVC:
-
-```powershell
-rustup show active-toolchain
-```
-
-輸出結果應包含 `stable-x86_64-pc-windows-msvc`。
-
-## 快速開始
-
-在專案根目錄執行以下命令:
 
 ```powershell
 pnpm install
 pnpm tauri dev
 ```
 
-`pnpm tauri dev` 會啟動 Vite 前端、編譯 Rust 後端並開啟桌面視窗。
-
-## 常用命令
-
 | 命令 | 用途 |
 | --- | --- |
-| `pnpm dev` | 僅啟動 Vite 前端 |
-| `pnpm build` | 型別檢查並建置前端 |
-| `pnpm tauri dev` | 以開發模式執行桌面應用程式 |
-| `pnpm tauri info` | 顯示 Tauri 與系統工具鏈資訊 |
-| `pnpm tauri build` | 建置前端、Rust 二進位檔與桌面安裝程式 |
+| `pnpm dev` | 僅前端 Vite |
+| `pnpm build` | 前端型別檢查與建置 |
+| `pnpm tauri dev` | 桌面開發模式 |
+| `pnpm tauri info` | 工具鏈資訊 |
+| `pnpm tauri build` | 正式版二進位與 Windows 安裝包 |
+
+## 安裝包說明
+
+待 GitHub Releases 發布 v0.1.0 後，從該頁面下載 MSI 或 NSIS。在此之前請用 `pnpm tauri build` 本機產生。
+
+目前安裝包**未經商業程式碼簽章**，首次執行可能出現 Windows SmartScreen 提示。這是 Release Candidate 的預期情況，不代表已通過安全認證。
+
+## 目前限制
+
+- Windows 10/11 優先；macOS 未正式驗收
+- 應用程式內不能編輯或寫回 HANDOFF / Skill / Agent 檔案
+- 無 SQLite、無雲端同步、無聊天 UI、無市集
+- 原生資料夾選擇需要桌面應用程式，純瀏覽器 Vite 預覽不可用
 
 ## 專案結構
 
-| 路徑 | 用途 |
+| 路徑 | 說明 |
 | --- | --- |
-| `src/` | React 與 TypeScript 前端 |
+| `src/` | React / TypeScript 前端 |
 | `src-tauri/` | Rust 後端與 Tauri 設定 |
-| `public/` | 前端靜態資源 |
-| `HANDOFF.md` | 供 Cursor、Codex 等工具使用的目前狀態與後續行動 |
-| `docs/superpowers/plans/` | 開發過程中使用的實作計畫 |
+| `docs/product/mvp-definition.md` | MVP 產品定義 |
+| `docs/architecture/sqlite-evaluation.md` | Phase 5 SQLite 評估（未引入） |
+| `docs/release/` | Release Candidate 清單與草稿 |
+| `HANDOFF.md` | 協作交接狀態 |
+| `CHANGELOG.md` | 版本紀錄 |
 
-## 協作規則
+## 協作
 
-修改程式碼前請先閱讀 `HANDOFF.md`,並在每次開發工作階段結束後更新它。切勿提交 API 金鑰、存取權杖、密碼或真實的 `.env` 檔案。
+改程式碼前先讀 `HANDOFF.md` 與 `AGENTS.md`。保持小範圍變更。不要提交 API key、token、密碼或真實 `.env`。
 
-## 授權條款
+## 授權
 
-SkillCopilot 基於 [MIT 授權條款](LICENSE) 發佈。
+SkillCopilot 以 [MIT License](LICENSE) 發布。
