@@ -13,7 +13,6 @@ import {
   createMockPhases,
   createMockSafetyBoundaries,
   createMockWorkspace,
-  mockAgents,
 } from "./data/mock";
 import { useI18n } from "./i18n/I18nProvider";
 import { copyText } from "./lib/clipboard";
@@ -29,9 +28,7 @@ function App() {
     () => new Set<PageId>(["dashboard"]),
   );
   const [toast, setToast] = useState<ToastState | null>(null);
-  const [selectedAgentId, setSelectedAgentId] = useState(
-    mockAgents[0]?.id ?? "",
-  );
+  const [selectedAgentId, setSelectedAgentId] = useState("");
   const [agentQuery, setAgentQuery] = useState("");
   const [selectedSkillId, setSelectedSkillId] = useState("");
   const [skillQuery, setSkillQuery] = useState("");
@@ -142,7 +139,7 @@ function App() {
             aria-hidden={page !== "agents"}
           >
             <AgentsPage
-              agents={mockAgents}
+              rootPath={WORKSPACE_ROOT_PATH}
               query={agentQuery}
               onQueryChange={setAgentQuery}
               selectedId={selectedAgentId}

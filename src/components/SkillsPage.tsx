@@ -160,7 +160,7 @@ export function SkillsPage({
     .join(" · ");
 
   return (
-    <div className="page split-page skills-page">
+    <div className="page split-page skills-page resource-page">
       <div className="split-main">
         <header className="page-header compact-header">
           <div className="page-header-text">

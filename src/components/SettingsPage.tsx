@@ -67,8 +67,8 @@ export function SettingsPage({
       </section>
 
       <div className="callout callout-warning" role="note">
-        <div className="callout-title">{t("settings.phase3Title")}</div>
-        <p className="callout-body">{t("settings.phase3Body")}</p>
+        <div className="callout-title">{t("settings.phase4Title")}</div>
+        <p className="callout-body">{t("settings.phase4Body")}</p>
       </div>
 
       <section className="settings-section" aria-labelledby="workspace-settings">

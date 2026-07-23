@@ -52,7 +52,7 @@ export function createMockPhases(t: TranslateFn): TaskPhase[] {
     {
       id: "p4",
       name: t("phase.name.4"),
-      status: "pending",
+      status: "done",
       summary: t("phase.summary.4"),
     },
     {
@@ -160,7 +160,7 @@ export const mockAgents: AgentItem[] = [
     prompt: `你是 SkillCopilot 的 frontend-builder 子智能体。
 
 职责：用 React + TypeScript + CSS 实现清晰的桌面工作台界面。
-约束：不加 UI 框架；不接真实文件系统；不改 Rust；不加 SQLite。
+约束：不加 UI 框架；通过现有 Tauri API 读取本地数据；不加 SQLite。
 验证：pnpm build 必须通过。`,
   },
   {
@@ -253,12 +253,12 @@ export function createMockDataSources(t: TranslateFn): DataSourceItem[] {
     {
       path: ".cursor/rules/",
       note: t("settings.source.cursorRules"),
-      status: "planned",
+      status: "real",
     },
     {
       path: ".github/copilot-instructions.md",
       note: t("settings.source.copilot"),
-      status: "planned",
+      status: "real",
     },
     {
       path: "docs/product/mvp-definition.md",

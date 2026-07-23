@@ -46,6 +46,40 @@ export interface AgentItem {
   prompt: string;
 }
 
+export type AgentSourceKind = "project" | "cursor" | "copilot";
+
+export interface AgentSourceStatus {
+  path: string;
+  kind: AgentSourceKind;
+  exists: boolean;
+  agentCount: number;
+  error?: string | null;
+}
+
+export interface LocalAgentItem {
+  id: string;
+  name: string;
+  role: string;
+  path: string;
+  relativePath: string;
+  sourceKind: AgentSourceKind;
+  promptBody: string;
+  updatedAt: string;
+  alwaysApply?: boolean | null;
+  globs?: string | null;
+}
+
+export interface AgentScanResult {
+  workspaceRoot: string;
+  sources: AgentSourceStatus[];
+  agents: LocalAgentItem[];
+  warnings: string[];
+  warningCount: number;
+  warningsTruncated: boolean;
+  truncated: boolean;
+  scannedAt: string;
+}
+
 export type DataSourceStatus = "real" | "planned";
 
 export interface DataSourceItem {

@@ -1,6 +1,6 @@
 # SkillCopilot MVP 产品定义（第一版）
 
-状态：草案，用于指导实现，不代表已实现功能。
+状态：Phase 1–4 已实现；Phase 5 SQLite 评估待进行。
 日期：2026-07-22
 范围：本地桌面应用；Windows 10/11 优先；不引入 SQLite、云同步、账号体系。
 
@@ -230,7 +230,7 @@ Workspace 1—* TaskPlan
 
 - 扫描 `agentRoots`（规则文件、copilot-instructions 等）映射为 Agent 条目。
 - 详情页 + 剪贴板复制。
-- 可选：允许用户标注「显示名 / 角色」的本地覆盖配置（仍用 JSON/TOML 文件，不用 SQLite）。
+- 一份源文件对应一个 Agent 条目；本阶段只读，不提供本地覆盖配置。
 - 验收：复制后粘贴到外部编辑器内容完整正确。
 
 ### Phase 5：再评估是否引入 SQLite
@@ -266,7 +266,7 @@ Phase 1 单独可提前验收：仅 mock 数据下四页可浏览 + `pnpm build`
    仅仓库内路径，还是同时包含用户级 Cursor skills 目录（如 `%USERPROFILE%\.cursor\skills-cursor`）？
 
 2. **Agent 的权威来源如何映射？**
-   `AGENTS.md`、`.cursor/rules/*.mdc`、`.github/copilot-instructions.md` 是合并为多个 Agent，还是「主脑一条 + 规则多条」？显示名规则是什么？
+   **已决策（Phase 4）**：一个源文件对应一个 Agent 条目；`AGENTS.md` = `project`，Cursor `.mdc` 每文件一条 = `cursor`，`copilot-instructions.md` = `copilot`；各文件原文互不合并。
 
 3. **Handoff 是否解析结构化字段？**
    MVP 用标题截取（`## Last Known Next Step`）是否足够，还是需要 frontmatter / 固定章节协议？

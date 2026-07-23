@@ -1,4 +1,5 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+mod agent_scanner;
 mod skill_scanner;
 
 use std::path::Path;
@@ -7,6 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
+use agent_scanner::{AgentScanRequest, AgentScanResult};
 use skill_scanner::{SkillScanRequest, SkillScanResult};
 
 #[tauri::command]
@@ -20,6 +22,11 @@ fn greet(name: &str) -> String {
 #[tauri::command]
 fn scan_local_skills(request: SkillScanRequest) -> Result<SkillScanResult, String> {
     skill_scanner::run_scan(&request.root_path)
+}
+
+#[tauri::command]
+fn scan_agent_configs(request: AgentScanRequest) -> Result<AgentScanResult, String> {
+    agent_scanner::run_scan(&request.root_path)
 }
 
 #[derive(Deserialize)]
@@ -284,7 +291,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             read_workspace_status,
-            scan_local_skills
+            scan_local_skills,
+            scan_agent_configs
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

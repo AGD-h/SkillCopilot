@@ -19,8 +19,8 @@ If `HANDOFF.md` conflicts with older assumptions, follow `HANDOFF.md`.
 - Stack: Tauri 2, React, TypeScript, Rust, Vite, pnpm.
 - Primary target: Windows 10/11; keep later macOS compatibility.
 - Product: local-first AI project main-brain and Skill/Agent manager.
-- Phases 1–3.5 are complete; next is Phase 4 (Agent config scanning) when requested.
-- Do not add SQLite until Phase 5 evaluation says it is needed.
+- Phases 1–4 are complete; next is the Phase 5 SQLite evaluation.
+- Do not add SQLite until Phase 5 produces a written conclusion that it is needed.
 
 ## Collaboration Rules
 

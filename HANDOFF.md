@@ -4,7 +4,7 @@
 - SkillCopilot is a local-first AI project main-brain and Skill/Agent manager, published as the public `AGD-h/SkillCopilot` GitHub repository.
 - First target platform: Windows 10/11; keep configuration compatible with later macOS work.
 - Stack: Tauri 2, React, TypeScript, Rust, Vite, pnpm; SQLite waits for Phase 5 evaluation.
-- Phases 1, 2, 3, and 3.5 are complete; prepare to enter Phase 4 (Agent configuration scanning). Do not start Phase 4 until explicitly requested.
+- Phases 1, 2, 3, 3.5, and 4 are complete; prepare the Phase 5 written evaluation of whether SQLite is needed.
 - Dashboard shows local file text as-is: do not auto-translate `HANDOFF.md`, `AGENTS.md`, or Skill body content in the frontend.
 - MVP product definition is recorded at `docs/product/mvp-definition.md`.
 
@@ -46,6 +46,7 @@
 - Phase 2 implemented: Dashboard reads real local workspace status via Tauri, with mock fallback.
 - Phase 3 implemented: Skills page reads a real local `SKILL.md` scan via Tauri, with mock fallback.
 - Phase 3.5 implemented: trilingual UI (`zh-CN` / `en` / `zh-TW`) with localStorage persistence; no i18n library dependency.
+- Phase 4 implemented: Agents page reads workspace `AGENTS.md`, Cursor `.mdc` rules, and GitHub Copilot instructions as separate real, read-only Agent entries with complete copyable prompts.
 - SQLite has not been added.
 
 ## Scaffold Verification Evidence
@@ -152,6 +153,33 @@
   - Dev server stopped; port 1420 not listening.
 - `pnpm tauri dev` / `pnpm tauri build` were NOT run (frontend-only phase).
 
+## Phase 4 Implementation
+- Added dedicated read-only `src-tauri/src/agent_scanner.rs`; `src-tauri/src/lib.rs` retains only the thin `scan_agent_configs(request)` Tauri wrapper and command registration.
+- Source mapping is fixed and non-merging: `<workspace>\AGENTS.md` → `project`; each `<workspace>\.cursor\rules\**\*.mdc` → `cursor`; `<workspace>\.github\copilot-instructions.md` → `copilot`. No user-level, Skill, product-doc, network, marketplace, or cloud sources are scanned.
+- Each successful source file becomes exactly one Agent with stable canonical-path id, absolute and workspace-relative paths, source kind, display name/role, mtime, optional Cursor `alwaysApply` / `globs`, and the complete source text as `promptBody`.
+- Prompt bodies are returned exactly as UTF-8 decoded from disk: no trim, newline rewrite, frontmatter removal, translation, concatenation, prefix, or suffix. Display metadata is parsed from a separate view of the same string.
+- The scanner is depth-limited (Cursor rules: 6), bounded to 1 MiB per file and 200 valid unique Agents, never follows symlinks/junctions, canonicalizes candidates and enforces root containment, and retains at most 100 warning messages while reporting the true warning count.
+- Frontend adds typed `scanAgentConfigs(rootPath)` and camelCase result types. Agents scans only on first mount or manual refresh, protects against stale/unmounted responses, preserves App-owned search/selection across navigation and locale changes, and distinguishes loading / real / fallback / partial / empty / search-empty states.
+- Agents shows source-kind tags, paths, mtime, Cursor metadata, complete read-only prompt text, copy-path and copy-prompt actions. Mock Agents remain fallback-only.
+- Skills and Agents share the constrained `.resource-page` dual-scroll layout; at `<=700px` they return to natural stacked page scrolling.
+- Settings, Dashboard phase timeline, sidebar status, mock fallback copy, and all three UI catalogs reflect Phase 4 completion. Local names, roles, paths, warnings, and prompt bodies stay untranslated.
+- No dependencies, SQLite, database files, config capabilities, workspace picker, Agent editing, source writes, model calls, or network scanning were added.
+
+## Phase 4 Verification
+- Real read-only scan of `E:\SkillCopilot`: 3 Agents (`AGENTS.md`, `.cursor/rules/skillcopilot-main-brain.mdc`, `.github/copilot-instructions.md`), one each for `project` / `cursor` / `copilot`; `truncated=false`; `warningCount=0`.
+- Cursor metadata: `description="SkillCopilot project main-brain rules"` and `alwaysApply=true`.
+- All three `promptBody` values matched their final source files byte-for-byte after UTF-8 decoding, including Cursor frontmatter and trailing newlines.
+- `cargo fmt --manifest-path src-tauri/Cargo.toml` and `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`: exited 0.
+- `cargo test --manifest-path src-tauri/Cargo.toml`: 68 passed, 0 failed (36 Agent scanner tests plus the retained 32 Skill scanner tests). Coverage includes source discovery, H1/role/frontmatter parsing, bounded reads, malformed input, path containment, symlink/junction avoidance where supported, stable sorting/id, valid-unique cap semantics, and warning accounting.
+- `cargo check --manifest-path src-tauri/Cargo.toml`, `pnpm build`, `pnpm tauri info`, and `git diff --check`: exited 0.
+- Browser DOM QA with a temporary out-of-repo Playwright script and typed Tauri invoke fixtures: real-source UI showed 3 Agents and source labels; source/path/prompt searches filtered; locale switches preserved query/selection without a remount scan; manual refresh scanned again; all four pages navigated without frontend errors.
+- Browser clipboard interception confirmed the copy action passed the selected Cursor `promptBody` exactly and retained frontmatter. The native Windows system clipboard was not read back automatically.
+- Layout stress QA at 800×600 / 1280×800 / 1920×1080: Agents remained dual-pane; the left list reached a fully visible final entry; the Inspector reached its copy actions when overflow existed; at 1920×1080 the Inspector correctly had no scrollbar when all content fit. At 700px the resource pages switched to natural stacked scrolling.
+- Skills regression at 800×600: 13-item list independently scrolled to fully visible `skill-optimizer`; Inspector independently scrolled.
+- `pnpm tauri dev`: Vite ready on 1420; Rust dev profile compiled; `skillcopilot.exe` launched. Runtime output contained no panic, invoke error, or recurring frontend error.
+- Native WebView2 pixel-level interaction remains unavailable to the automation; process/runtime and browser DOM checks are not represented as native pixel confirmation.
+- Dev process tree was intentionally stopped after QA (the resulting non-zero termination is expected); port 1420 was released and no SkillCopilot/Vite/Tauri process remained.
+
 ## Publishing State
 - License: MIT, recorded in `LICENSE`, `package.json`, and `src-tauri/Cargo.toml`.
 - Git repository initialized on branch `main` with the scaffold as the first commit.
@@ -161,7 +189,8 @@
 - Phase 2 done: Tauri read-only access to `HANDOFF.md`, `AGENTS.md`, and `git status` is implemented and Dashboard uses real data with mock fallback.
 - Phase 3 done: local `SKILL.md` scanning is implemented and the Skills page shows a real, searchable Skill list with read-only detail (mock fallback when the Tauri runtime is unavailable).
 - Phase 3.5 done: UI supports zh-CN / en / zh-TW with Settings language control and localStorage persistence; local file contents remain untranslated.
-- Phase 4 is the next phase: scan Agent configuration files and show real Agent entries with copyable prompts on the Agents page.
+- Phase 4 done: workspace Agent configuration files are scanned read-only and shown as one Agent per source file with complete copyable prompts.
+- Phase 5 is next: write the SQLite evaluation; do not introduce a database before that conclusion.
 - Settings workspace folder picker is still not implemented (root fixed to `E:\SkillCopilot`).
 - Verify `pnpm tauri dev` renders the real Dashboard and Skills page in an actual window when a display is available (manual UI QA still pending).
 - SQLite has still NOT been added and must not be added until the Phase 5 evaluation concludes it is needed.
@@ -186,8 +215,7 @@
 - If an installer requires administrator permission, a graphical installer, or a reboot, pause and give manual instructions.
 
 ## Last Known Next Step
-- Phase 4：扫描 Agent 配置文件并在 Agents 页展示真实条目与可复制提示词。
-- Do not add SQLite until Phase 5 evaluation concludes it is required.
+- Phase 5：书面评估是否需要 SQLite；在得出结论前不得引入数据库。
 
 ## Verified Tool Versions
 - Windows: Windows 11/10.0.26200 x64.

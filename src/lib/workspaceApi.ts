@@ -1,5 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { SkillScanResult, WorkspaceStatus } from "../types";
+import type {
+  AgentScanResult,
+  SkillScanResult,
+  WorkspaceStatus,
+} from "../types";
 
 /**
  * Read-only local workspace status from the Tauri backend.
@@ -25,6 +29,15 @@ export async function scanLocalSkills(
   rootPath: string,
 ): Promise<SkillScanResult> {
   return invoke<SkillScanResult>("scan_local_skills", {
+    request: { rootPath },
+  });
+}
+
+/** Read-only workspace Agent config scan from the Tauri backend. */
+export async function scanAgentConfigs(
+  rootPath: string,
+): Promise<AgentScanResult> {
+  return invoke<AgentScanResult>("scan_agent_configs", {
     request: { rootPath },
   });
 }

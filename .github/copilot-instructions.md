@@ -18,13 +18,13 @@ These files define the current project phase and constraints.
 - Stack: Tauri 2, React, TypeScript, Rust, Vite, pnpm.
 - Primary platform: Windows 10/11; keep later macOS compatibility.
 - Product: local-first AI project main-brain and Skill/Agent manager.
-- Phases 1–3.5 are complete; next is Phase 4 (Agent config scanning) when requested.
-- Do not add SQLite until Phase 5 evaluation says it is needed.
+- Phases 1–4 are complete; next is the Phase 5 SQLite evaluation.
+- Do not add SQLite until Phase 5 produces a written conclusion that it is needed.
 
 ## Constraints
 
 - Do not add product behavior unless explicitly requested.
-- Do not add SQLite until a feature explicitly needs it.
+- Do not add SQLite until the Phase 5 evaluation produces a written conclusion.
 - Use Windows-native PowerShell/CMD for Windows Tauri work.
 - Do not use WSL as the main Windows build environment.
 - Do not commit secrets or real `.env` files.

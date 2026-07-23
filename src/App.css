@@ -757,6 +757,21 @@ button:disabled {
   color: var(--accent);
 }
 
+.tag-agent-project {
+  background: #ecfdf3;
+  color: #067647;
+}
+
+.tag-agent-cursor {
+  background: #eff8ff;
+  color: #026aa2;
+}
+
+.tag-agent-copilot {
+  background: #f4f0ff;
+  color: #6927da;
+}
+
 .color-dot {
   width: 10px;
   height: 10px;
@@ -967,13 +982,13 @@ button:disabled {
   margin-top: 4px;
 }
 
-.app-main:has(.page-slot:not([hidden]) .skills-page) {
+.app-main:has(.page-slot:not([hidden]) .resource-page) {
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-.skills-page.split-page {
+.resource-page.split-page {
   flex: 1 1 auto;
   height: 100%;
   max-height: 100%;
@@ -984,7 +999,7 @@ button:disabled {
   align-items: stretch;
 }
 
-.skills-page .split-main {
+.resource-page .split-main {
   min-width: 0;
   min-height: 0;
   max-height: 100%;
@@ -996,19 +1011,19 @@ button:disabled {
   flex-direction: column;
 }
 
-.skills-page .page-header,
-.skills-page .toolbar,
-.skills-page .callout {
+.resource-page .page-header,
+.resource-page .toolbar,
+.resource-page .callout {
   flex-shrink: 0;
 }
 
-.skills-page .item-list {
+.resource-page .item-list {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
 }
 
-.skills-page .inspector {
+.resource-page .inspector {
   align-self: stretch;
   max-height: 100%;
   min-width: 0;
@@ -1025,7 +1040,8 @@ button:disabled {
   min-width: 0;
 }
 
-.app-main:has(.page-slot:not([hidden]) .skills-page) > .page-slot:not([hidden]) {
+.app-main:has(.page-slot:not([hidden]) .resource-page)
+  > .page-slot:not([hidden]) {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -1279,12 +1295,24 @@ button:disabled {
 }
 
 @media (max-width: 700px) {
+  .app-main:has(.page-slot:not([hidden]) .resource-page) {
+    display: block;
+    overflow: auto;
+  }
+
+  .app-main:has(.page-slot:not([hidden]) .resource-page)
+    > .page-slot:not([hidden]) {
+    display: block;
+    height: auto;
+    min-height: 100%;
+  }
+
   .split-page {
     flex-direction: column;
   }
 
   .split-page .inspector,
-  .skills-page .inspector {
+  .resource-page .inspector {
     width: 100%;
     flex: 1 1 auto;
     position: static;
@@ -1292,24 +1320,24 @@ button:disabled {
     min-width: 0;
   }
 
-  .skills-page.split-page {
+  .resource-page.split-page {
     height: auto;
     max-height: none;
     overflow: visible;
     align-items: stretch;
   }
 
-  .skills-page .split-main {
+  .resource-page .split-main {
     overflow: visible;
     height: auto;
     max-height: none;
   }
 
-  .skills-page .item-list {
+  .resource-page .item-list {
     overflow: visible;
   }
 
-  .skills-page .inspector {
+  .resource-page .inspector {
     max-height: none;
     overflow: visible;
   }
