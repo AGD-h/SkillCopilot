@@ -1,10 +1,12 @@
 # HANDOFF
 
 ## Current Goal
-- Maintain the verified SkillCopilot project scaffold, now published as the public `AGD-h/SkillCopilot` GitHub repository.
+- SkillCopilot is a local-first AI project main-brain and Skill/Agent manager, published as the public `AGD-h/SkillCopilot` GitHub repository.
 - First target platform: Windows 10/11; keep configuration compatible with later macOS work.
-- Stack: Tauri 2, React, TypeScript, Rust, Vite, pnpm, SQLite later, and Git later.
-- MVP product definition is recorded at `docs/product/mvp-definition.md` (local AI project main-brain + Skill/Agent manager). Do not add SQLite until Phase 5 evaluation says it is needed.
+- Stack: Tauri 2, React, TypeScript, Rust, Vite, pnpm; SQLite waits for Phase 5 evaluation.
+- Phases 1, 2, 3, and 3.5 are complete; prepare to enter Phase 4 (Agent configuration scanning). Do not start Phase 4 until explicitly requested.
+- Dashboard shows local file text as-is: do not auto-translate `HANDOFF.md`, `AGENTS.md`, or Skill body content in the frontend.
+- MVP product definition is recorded at `docs/product/mvp-definition.md`.
 
 ## Recommended Development Environment
 - Main development environment: Windows-native PowerShell/CMD.

@@ -17,10 +17,10 @@ If `HANDOFF.md` conflicts with older assumptions, follow `HANDOFF.md`.
 - Workspace: `E:\SkillCopilot`.
 - Public repository: `https://github.com/AGD-h/SkillCopilot`.
 - Stack: Tauri 2, React, TypeScript, Rust, Vite, pnpm.
-- Primary target: Windows 10/11.
-- Current phase: verified scaffold only.
-- Product features have not started.
-- Do not add SQLite until a feature explicitly needs it.
+- Primary target: Windows 10/11; keep later macOS compatibility.
+- Product: local-first AI project main-brain and Skill/Agent manager.
+- Phases 1–3.5 are complete; next is Phase 4 (Agent config scanning) when requested.
+- Do not add SQLite until Phase 5 evaluation says it is needed.
 
 ## Collaboration Rules
 

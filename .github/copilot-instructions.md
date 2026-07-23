@@ -16,10 +16,10 @@ These files define the current project phase and constraints.
 
 - Workspace: `E:\SkillCopilot`.
 - Stack: Tauri 2, React, TypeScript, Rust, Vite, pnpm.
-- Primary platform: Windows 10/11.
-- Current phase: verified scaffold.
-- The frontend and Rust code still mostly reflect the official template.
-- Product functionality and SQLite integration have not started.
+- Primary platform: Windows 10/11; keep later macOS compatibility.
+- Product: local-first AI project main-brain and Skill/Agent manager.
+- Phases 1–3.5 are complete; next is Phase 4 (Agent config scanning) when requested.
+- Do not add SQLite until Phase 5 evaluation says it is needed.
 
 ## Constraints
 
