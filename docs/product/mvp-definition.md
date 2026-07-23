@@ -1,7 +1,7 @@
 # SkillCopilot MVP 产品定义（第一版）
 
-状态：Phase 1–4 已实现；Phase 5 SQLite 评估待进行。
-日期：2026-07-22
+状态：Phase 1–5 已完成；Phase 5 结论为当前 MVP 不引入 SQLite。
+日期：2026-07-23
 范围：本地桌面应用；Windows 10/11 优先；不引入 SQLite、云同步、账号体系。
 
 ---
@@ -233,17 +233,18 @@ Workspace 1—* TaskPlan
 - 一份源文件对应一个 Agent 条目；本阶段只读，不提供本地覆盖配置。
 - 验收：复制后粘贴到外部编辑器内容完整正确。
 
-### Phase 5：再评估是否引入 SQLite
+### Phase 5：再评估是否引入 SQLite — 已完成（2026-07-23）
 
-- 仅当出现以下真实需求再引入：跨文件索引性能不足、需要复杂查询/历史版本、本地覆盖配置膨胀难维护。
-- 评估产出：书面结论（继续纯文件 vs 引入 SQLite）+ 若引入则最小 schema。
-- 在此之前禁止「为了以后方便」提前加数据库。
+- **书面结论**：当前 MVP **不引入 SQLite**。继续以源文件为权威数据；locale 等轻量偏好继续使用 localStorage；Workspace 绑定可用轻量持久化，不需要数据库。
+- **评估文档**：[`docs/architecture/sqlite-evaluation.md`](../architecture/sqlite-evaluation.md)（含决策矩阵、成本、ADR 与重评触发条件）。
+- **未做**：未安装/引入 SQLite crate 或 npm 包；未建 schema/migration；未创建数据库文件；未改产品代码。
+- 仅当重评触发条件成立时再开新一轮书面评估，之后才可考虑数据库。
 
 ---
 
 ## 7. Acceptance Criteria
 
-MVP（完成 Phase 1–4，Phase 5 仅需评估结论）应能验证：
+MVP（完成 Phase 1–4；Phase 5 已产出评估结论）应能验证：
 
 1. **壳可用**：Windows 上 `pnpm tauri dev` 打开应用，四页可导航，无官方模板「Hello」示例残留。
 2. **状态可信**：对 `E:\SkillCopilot`（或用户绑定的仓库），Dashboard 显示的分支/脏状态与终端 `git status --short --branch` 一致；Handoff 摘要来自真实 `HANDOFF.md`。

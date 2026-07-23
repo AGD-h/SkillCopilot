@@ -3,8 +3,9 @@
 ## Current Goal
 - SkillCopilot is a local-first AI project main-brain and Skill/Agent manager, published as the public `AGD-h/SkillCopilot` GitHub repository.
 - First target platform: Windows 10/11; keep configuration compatible with later macOS work.
-- Stack: Tauri 2, React, TypeScript, Rust, Vite, pnpm; SQLite waits for Phase 5 evaluation.
-- Phases 1, 2, 3, 3.5, and 4 are complete; prepare the Phase 5 written evaluation of whether SQLite is needed.
+- Stack: Tauri 2, React, TypeScript, Rust, Vite, pnpm.
+- Phases 1–5 are complete. Phase 5 concluded that SQLite is **not** needed for the current MVP; see `docs/architecture/sqlite-evaluation.md`.
+- Next product gap: Workspace folder selection and lightweight persistence (remove the hardcoded `E:\SkillCopilot` root). Still do not introduce SQLite.
 - Dashboard shows local file text as-is: do not auto-translate `HANDOFF.md`, `AGENTS.md`, or Skill body content in the frontend.
 - MVP product definition is recorded at `docs/product/mvp-definition.md`.
 
@@ -47,7 +48,8 @@
 - Phase 3 implemented: Skills page reads a real local `SKILL.md` scan via Tauri, with mock fallback.
 - Phase 3.5 implemented: trilingual UI (`zh-CN` / `en` / `zh-TW`) with localStorage persistence; no i18n library dependency.
 - Phase 4 implemented: Agents page reads workspace `AGENTS.md`, Cursor `.mdc` rules, and GitHub Copilot instructions as separate real, read-only Agent entries with complete copyable prompts.
-- SQLite has not been added.
+- Phase 5 complete: written SQLite evaluation concluded that SQLite is not needed now; source files remain authoritative; locale stays in localStorage; Workspace binding may use light persistence without a database.
+- SQLite has not been added and must not be added unless revisit triggers in `docs/architecture/sqlite-evaluation.md` are met.
 
 ## Scaffold Verification Evidence
 - `pnpm install` exited with code 0; only the `esbuild` install script is allowed.
@@ -181,6 +183,19 @@
 - Native WebView2 pixel-level interaction remains unavailable to the automation; process/runtime and browser DOM checks are not represented as native pixel confirmation.
 - Dev process tree was intentionally stopped after QA (the resulting non-zero termination is expected); port 1420 was released and no SkillCopilot/Vite/Tauri process remained.
 
+## Phase 5 Implementation
+- Docs-only architecture evaluation. No SQLite crate/npm package, schema, migration, database file, or product-code change.
+- Created `docs/architecture/sqlite-evaluation.md` covering current data model and scale, SQLite benefits vs costs, decision matrix (pure files + memory / localStorage-JSON / SQLite), explicit conclusion, revisit triggers, risks/exit strategy, and ADR (Status / Context / Decision / Consequences / Revisit Triggers).
+- Updated `docs/product/mvp-definition.md`, `HANDOFF.md`, `AGENTS.md`, `.cursor/rules/skillcopilot-main-brain.mdc`, and `.github/copilot-instructions.md` to record the same conclusion.
+- Conclusion: current MVP does **not** introduce SQLite; keep source files authoritative; keep locale in localStorage; Workspace binding can use lightweight persistence without a database.
+
+## Phase 5 Verification
+- Dependency search: no SQLite crate or npm package in `package.json`, `pnpm-lock.yaml`, `src-tauri/Cargo.toml`, or `src-tauri/Cargo.lock`.
+- `git diff --check` exited 0 for this docs-only change set.
+- Document conclusions aligned: MVP Phase 5 section, HANDOFF Current Goal / Pending Work / Last Known Next Step, and agent instruction files all state SQLite is not needed now.
+- Last Known Next Step points at Workspace picker persistence, not further SQLite work.
+- `pnpm build` / `pnpm tauri build` were not required (docs only); product `src` / `src-tauri` code was not modified.
+
 ## Publishing State
 - License: MIT, recorded in `LICENSE`, `package.json`, and `src-tauri/Cargo.toml`.
 - Git repository initialized on branch `main` with the scaffold as the first commit.
@@ -191,10 +206,9 @@
 - Phase 3 done: local `SKILL.md` scanning is implemented and the Skills page shows a real, searchable Skill list with read-only detail (mock fallback when the Tauri runtime is unavailable).
 - Phase 3.5 done: UI supports zh-CN / en / zh-TW with Settings language control and localStorage persistence; local file contents remain untranslated.
 - Phase 4 done: workspace Agent configuration files are scanned read-only and shown as one Agent per source file with complete copyable prompts.
-- Phase 5 is next: write the SQLite evaluation; do not introduce a database before that conclusion.
-- Settings workspace folder picker is still not implemented (root fixed to `E:\SkillCopilot`).
+- Phase 5 done: written evaluation concluded SQLite is not needed for the current MVP (`docs/architecture/sqlite-evaluation.md`).
+- Next: implement Workspace folder selection and lightweight persistence; remove the hardcoded `E:\SkillCopilot` root. Still do not introduce SQLite.
 - Verify `pnpm tauri dev` renders the real Dashboard and Skills page in an actual window when a display is available (manual UI QA still pending).
-- SQLite has still NOT been added and must not be added until the Phase 5 evaluation concludes it is needed.
 - For normal development, open a fresh PowerShell or Cursor terminal so the Rust PATH is loaded.
 
 ## Temporary Validation Project
@@ -216,7 +230,7 @@
 - If an installer requires administrator permission, a graphical installer, or a reboot, pause and give manual instructions.
 
 ## Last Known Next Step
-- Phase 5：书面评估是否需要 SQLite；在得出结论前不得引入数据库。
+- 完成 MVP 剩余缺口：实现 Workspace 文件夹选择与持久化，移除 E:\SkillCopilot 硬编码；仍不引入 SQLite。
 
 ## Verified Tool Versions
 - Windows: Windows 11/10.0.26200 x64.

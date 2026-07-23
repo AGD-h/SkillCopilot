@@ -19,8 +19,8 @@ If `HANDOFF.md` conflicts with older assumptions, follow `HANDOFF.md`.
 - Stack: Tauri 2, React, TypeScript, Rust, Vite, pnpm.
 - Primary target: Windows 10/11; keep later macOS compatibility.
 - Product: local-first AI project main-brain and Skill/Agent manager.
-- Phases 1–4 are complete; next is the Phase 5 SQLite evaluation.
-- Do not add SQLite until Phase 5 produces a written conclusion that it is needed.
+- Phases 1–5 are complete. Phase 5 concluded that SQLite is not needed for the current MVP.
+- Keep source files as the authority; use localStorage/small JSON for preferences and upcoming Workspace binding. Do not add SQLite unless a revisit trigger in `docs/architecture/sqlite-evaluation.md` is met and a new written conclusion says so.
 
 ## Collaboration Rules
 
