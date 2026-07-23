@@ -43,6 +43,7 @@
 - Official Tauri template greet/logo frontend example has been removed from `src/`.
 - Phase 2 implemented: Dashboard reads real local workspace status via Tauri, with mock fallback.
 - Phase 3 implemented: Skills page reads a real local `SKILL.md` scan via Tauri, with mock fallback.
+- Phase 3.5 implemented: trilingual UI (`zh-CN` / `en` / `zh-TW`) with localStorage persistence; no i18n library dependency.
 - SQLite has not been added.
 
 ## Scaffold Verification Evidence
@@ -124,6 +125,29 @@
   - `git diff --check`: exited 0.
 - `pnpm tauri dev` was NOT run for Phase 3 or the edge-case fix. Native WebView2 pixel-level / interactive UI QA (including 800×600 dual-pane visual confirmation) was NOT performed by automation and remains a manual follow-up. Phase 2 already validated that the Tauri dev runtime launches and renders. Browser `pnpm dev` viewport screenshots for 800×600 / 1280×800 were also NOT taken in this session.
 
+## Phase 3.5 Implementation
+- Added a zero-dependency i18n layer under `src/i18n/`: `locale.ts` (Locale union, system detection, `skillcopilot.locale` localStorage), `messages.ts` (flat `MessageKey` dictionaries — `zh-CN` baseline; `en` / `zh-TW` typed as `Record<MessageKey, string>` so a missing key fails `pnpm build`), and `I18nProvider.tsx` (`locale` / `setLocale` / `t`, updates `document.documentElement.lang`, simple `{param}` interpolation).
+- `src/main.tsx` wraps `<App />` once with `<I18nProvider>`; components call `useI18n()` — no prop-drilling of `t`.
+- First launch: saved locale → else `navigator.languages` / `navigator.language` (`zh-TW`/`zh-HK`/`zh-MO`/`zh-Hant` → zh-TW; other `zh*` → zh-CN; else en; API failure → zh-CN). User choice is persisted immediately (no Save button).
+- Translation boundary: UI chrome, badges, toasts, empty/loading/error wrappers, Settings notes, phase labels, and app-owned mock status text are translated. HANDOFF/AGENTS/Git raw content, Skill/Agent source bodies/paths/names, and Rust warning strings stay original (UI may add a translated wrapper prefix).
+- Settings gains a three-button segmented language control (labels always show 简体中文 / English /繁體中文; `button` + `aria-pressed`; translated group `aria-label`). Copy explains system-follow, remembered choice, and “local files stay original”.
+- App-owned mock factories (`createMockWorkspace` / `createMockPhases` / `createMockDataSources` / gates / safety) rebuild via `useMemo` on `t`. Phase statuses corrected: Phase 1–3 done, Phase 4–5 pending. Sidebar chip updated from obsolete “Phase 1 Mock Mode” to “Phase 3 · Local data” (trilingual).
+- Locale switch clears any in-flight toast, does not remount App, does not reset page/search/selection, and does not re-invoke `readWorkspaceStatus` / `scanLocalSkills`. Dates use `toLocaleString(locale)`.
+- No new npm/Cargo dependencies; no SQLite; no Tauri/Rust command changes; no writes beyond `localStorage`.
+
+## Phase 3.5 Verification
+- `pnpm build` (`tsc && vite build`): exited 0.
+- `git diff --check`: exited 0.
+- Browser `pnpm dev` visual QA completed via Cursor browser tools:
+  - 800×600 Dashboard zh-CN: UI fully Simplified Chinese; sidebar chip “Phase 3 · 本地数据”; no overlap/clip.
+  - 800×600 Skills English: UI English; mock Skill bodies/paths stayed Chinese originals; dual-pane list + inspector usable; badge “Fallback mock data · 4 skills”.
+  - 800×600 / 1280×800 Settings zh-TW: segmented control shows 简体中文 / English / 繁體中文 (labels not locale-renamed); 繁體中文 pressed; UI uses 設定/資料/本機/掃描/複製 with no Simplified leftovers in chrome.
+  - Persistence: after selecting English then 繁體中文, reload kept `localStorage skillcopilot.locale` and `document.documentElement.lang` matching (`en` then `zh-TW`).
+  - State retention: Skills search `codebase-recon` + selected skill survived Settings locale switch (pages kept mounted via `hidden` slots; query/selection lifted to App).
+  - Screenshots captured: Dashboard zh-CN 800, Skills en 800, Settings zh-TW 1280 (locale control).
+- Dev server stopped afterward; port 1420 released.
+- `pnpm tauri dev` / `pnpm tauri build` were NOT run (frontend-only phase).
+
 ## Publishing State
 - License: MIT, recorded in `LICENSE`, `package.json`, and `src-tauri/Cargo.toml`.
 - Git repository initialized on branch `main` with the scaffold as the first commit.
@@ -132,6 +156,7 @@
 ## Pending Work
 - Phase 2 done: Tauri read-only access to `HANDOFF.md`, `AGENTS.md`, and `git status` is implemented and Dashboard uses real data with mock fallback.
 - Phase 3 done: local `SKILL.md` scanning is implemented and the Skills page shows a real, searchable Skill list with read-only detail (mock fallback when the Tauri runtime is unavailable).
+- Phase 3.5 done: UI supports zh-CN / en / zh-TW with Settings language control and localStorage persistence; local file contents remain untranslated.
 - Phase 4 is the next phase: scan Agent configuration files and show real Agent entries with copyable prompts on the Agents page.
 - Settings workspace folder picker is still not implemented (root fixed to `E:\SkillCopilot`).
 - Verify `pnpm tauri dev` renders the real Dashboard and Skills page in an actual window when a display is available (manual UI QA still pending).

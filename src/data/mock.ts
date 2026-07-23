@@ -1,3 +1,4 @@
+import type { TranslateFn } from "../i18n/I18nProvider";
 import type {
   AgentItem,
   DataSourceItem,
@@ -6,60 +7,64 @@ import type {
   WorkspaceInfo,
 } from "../types";
 
-export const mockWorkspace: WorkspaceInfo = {
-  name: "SkillCopilot",
-  path: "E:\\SkillCopilot",
-  branch: "main",
-  gitSummary: "main · synced",
-  workingTree: "Working tree clean",
-  phaseLabel: "MVP Phase 3 complete",
-  phaseFocus: "本地 Skill 扫描 · 真实数据",
-  currentGoal: "本地桌面 AI 项目主脑 + Skill / Agent 管理器",
-  nextStep:
-    "Phase 4：扫描 Agent 配置文件并在 Agents 页展示真实条目与可复制提示词。",
-  nextStepSource: "HANDOFF.md / docs/product/mvp-definition.md（mock）",
-  constraints: [
-    "不添加 SQLite",
-    "不实现聊天 UI",
-    "不接云同步",
-    "不自动 commit / push 业务代码",
-  ],
-  lastUpdatedLabel: "2026-07-22 20:13（mock）",
-};
+export function createMockWorkspace(t: TranslateFn): WorkspaceInfo {
+  return {
+    name: "SkillCopilot",
+    path: "E:\\SkillCopilot",
+    branch: "main",
+    gitSummary: t("dashboard.mockGitSummary"),
+    workingTree: t("dashboard.mockWorkingTree"),
+    phaseLabel: t("dashboard.mockPhaseLabel"),
+    phaseFocus: t("dashboard.mockPhaseFocus"),
+    currentGoal: t("dashboard.mockCurrentGoal"),
+    nextStep: t("dashboard.mockNextStep"),
+    nextStepSource: t("dashboard.mockNextStepSource"),
+    constraints: [
+      t("dashboard.mockConstraint.1"),
+      t("dashboard.mockConstraint.2"),
+      t("dashboard.mockConstraint.3"),
+      t("dashboard.mockConstraint.4"),
+    ],
+    lastUpdatedLabel: t("dashboard.mockUpdated"),
+  };
+}
 
-export const mockPhases: TaskPhase[] = [
-  {
-    id: "p1",
-    name: "Phase 1",
-    status: "done",
-    summary: "前端静态壳与 mock 数据",
-  },
-  {
-    id: "p2",
-    name: "Phase 2",
-    status: "done",
-    summary: "只读 HANDOFF / AGENTS / git status",
-  },
-  {
-    id: "p3",
-    name: "Phase 3",
-    status: "done",
-    summary: "扫描本地 Skills",
-  },
-  {
-    id: "p4",
-    name: "Phase 4",
-    status: "pending",
-    summary: "管理 Agents 与复制提示词",
-  },
-  {
-    id: "p5",
-    name: "Phase 5",
-    status: "pending",
-    summary: "再评估是否引入 SQLite",
-  },
-];
+export function createMockPhases(t: TranslateFn): TaskPhase[] {
+  return [
+    {
+      id: "p1",
+      name: t("phase.name.1"),
+      status: "done",
+      summary: t("phase.summary.1"),
+    },
+    {
+      id: "p2",
+      name: t("phase.name.2"),
+      status: "done",
+      summary: t("phase.summary.2"),
+    },
+    {
+      id: "p3",
+      name: t("phase.name.3"),
+      status: "done",
+      summary: t("phase.summary.3"),
+    },
+    {
+      id: "p4",
+      name: t("phase.name.4"),
+      status: "pending",
+      summary: t("phase.summary.4"),
+    },
+    {
+      id: "p5",
+      name: t("phase.name.5"),
+      status: "pending",
+      summary: t("phase.summary.5"),
+    },
+  ];
+}
 
+/** Source-file-like mock Skills — keep original content language. */
 export const mockSkills: SkillItem[] = [
   {
     id: "codebase-recon",
@@ -130,6 +135,7 @@ export const mockSkills: SkillItem[] = [
   },
 ];
 
+/** Source-file-like mock Agents — keep original content language. */
 export const mockAgents: AgentItem[] = [
   {
     id: "project-planner",
@@ -207,70 +213,81 @@ export const mockAgents: AgentItem[] = [
   },
 ];
 
-export const mockDataSources: DataSourceItem[] = [
-  {
-    path: "HANDOFF.md",
-    note: "项目交接状态与下一步（Phase 2 已只读读取）",
-    status: "real",
-  },
-  {
-    path: "AGENTS.md",
-    note: "跨工具会话启动规则（Phase 2 已只读读取）",
-    status: "real",
-  },
-  {
-    path: "git status --short --branch",
-    note: "只读 Git 分支与工作树状态（Phase 2）",
-    status: "real",
-  },
-  {
-    path: "<workspace>\\.agents\\skills",
-    note: "工作区级 Skill 根：SKILL.md（Phase 3 已扫描）",
-    status: "real",
-  },
-  {
-    path: "<workspace>\\.cursor\\skills",
-    note: "工作区级 Skill 根：SKILL.md（Phase 3 已扫描）",
-    status: "real",
-  },
-  {
-    path: "%USERPROFILE%\\.codex\\skills",
-    note: "用户级 Skill 根：SKILL.md（Phase 3 已扫描）",
-    status: "real",
-  },
-  {
-    path: "%USERPROFILE%\\.cursor\\skills",
-    note: "用户级 Skill 根：SKILL.md（Phase 3 已扫描）",
-    status: "real",
-  },
-  {
-    path: ".cursor/rules/",
-    note: "Cursor 主脑规则（Phase 4 Agent 解析）",
-    status: "planned",
-  },
-  {
-    path: ".github/copilot-instructions.md",
-    note: "GitHub Copilot 说明（Phase 4 Agent 解析）",
-    status: "planned",
-  },
-  {
-    path: "docs/product/mvp-definition.md",
-    note: "MVP 产品定义（暂未在应用内解析）",
-    status: "planned",
-  },
-];
+export function createMockDataSources(t: TranslateFn): DataSourceItem[] {
+  return [
+    {
+      path: "HANDOFF.md",
+      note: t("settings.source.handoff"),
+      status: "real",
+    },
+    {
+      path: "AGENTS.md",
+      note: t("settings.source.agents"),
+      status: "real",
+    },
+    {
+      path: "git status --short --branch",
+      note: t("settings.source.git"),
+      status: "real",
+    },
+    {
+      path: "<workspace>\\.agents\\skills",
+      note: t("settings.source.agentsSkills"),
+      status: "real",
+    },
+    {
+      path: "<workspace>\\.cursor\\skills",
+      note: t("settings.source.cursorSkills"),
+      status: "real",
+    },
+    {
+      path: "%USERPROFILE%\\.codex\\skills",
+      note: t("settings.source.codexUser"),
+      status: "real",
+    },
+    {
+      path: "%USERPROFILE%\\.cursor\\skills",
+      note: t("settings.source.cursorUser"),
+      status: "real",
+    },
+    {
+      path: ".cursor/rules/",
+      note: t("settings.source.cursorRules"),
+      status: "planned",
+    },
+    {
+      path: ".github/copilot-instructions.md",
+      note: t("settings.source.copilot"),
+      status: "planned",
+    },
+    {
+      path: "docs/product/mvp-definition.md",
+      note: t("settings.source.mvp"),
+      status: "planned",
+    },
+  ];
+}
 
-export const mockPhaseGates: string[] = [
-  "Phase 1：使用 mock 数据",
-  "Phase 2：读取本地 HANDOFF / AGENTS / Git 状态",
-  "Phase 3：扫描 Skills",
-  "Phase 4：管理 Agents",
-  "Phase 5：再评估 SQLite",
-];
+export function createMockPhaseGates(t: TranslateFn): string[] {
+  return [
+    t("settings.gate.1"),
+    t("settings.gate.2"),
+    t("settings.gate.3"),
+    t("settings.gate.4"),
+    t("settings.gate.5"),
+  ];
+}
 
-export const mockSafetyBoundaries: string[] = [
-  "No cloud sync",
-  "No account",
-  "No database",
-  "No automatic git writes",
-];
+export function createMockSafetyBoundaries(t: TranslateFn): string[] {
+  return [
+    t("settings.safety.1"),
+    t("settings.safety.2"),
+    t("settings.safety.3"),
+    t("settings.safety.4"),
+  ];
+}
+
+/** Stable workspace path/name for wiring that must not depend on locale. */
+export const WORKSPACE_ROOT_PATH = "E:\\SkillCopilot";
+export const WORKSPACE_NAME = "SkillCopilot";
+export const WORKSPACE_BRANCH = "main";

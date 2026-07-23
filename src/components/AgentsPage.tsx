@@ -1,8 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useI18n } from "../i18n/I18nProvider";
 import type { AgentItem, ToastState } from "../types";
 
 interface AgentsPageProps {
   agents: AgentItem[];
+  query: string;
+  onQueryChange: (query: string) => void;
   selectedId: string;
   onSelect: (id: string) => void;
   onCopy: (text: string) => void;
@@ -11,12 +14,14 @@ interface AgentsPageProps {
 
 export function AgentsPage({
   agents,
+  query,
+  onQueryChange,
   selectedId,
   onSelect,
   onCopy,
   toast,
 }: AgentsPageProps) {
-  const [query, setQuery] = useState("");
+  const { t } = useI18n();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -37,30 +42,30 @@ export function AgentsPage({
       <div className="split-main">
         <header className="page-header compact-header">
           <div className="page-header-text">
-            <h1 className="page-title">Agents</h1>
-            <p className="page-subtitle">
-              管理子智能体角色提示词，复制后到外部工具使用。
-            </p>
+            <h1 className="page-title">{t("agents.title")}</h1>
+            <p className="page-subtitle">{t("agents.subtitle")}</p>
           </div>
-          <span className="badge badge-mock">Mock · 6 agents</span>
+          <span className="badge badge-mock">
+            {t("agents.mockBadge", { count: agents.length })}
+          </span>
         </header>
 
         <div className="toolbar">
           <label className="search-field">
-            <span className="sr-only">搜索 Agents</span>
+            <span className="sr-only">{t("agents.searchSr")}</span>
             <input
               type="search"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="搜索名称、职责或来源…"
-              aria-label="搜索 Agents"
+              onChange={(e) => onQueryChange(e.target.value)}
+              placeholder={t("agents.searchPlaceholder")}
+              aria-label={t("agents.searchAria")}
             />
           </label>
         </div>
 
-        <ul className="item-list" aria-label="Agent 列表">
+        <ul className="item-list" aria-label={t("agents.listAria")}>
           {filtered.length === 0 ? (
-            <li className="empty-state">没有匹配的 Agent。</li>
+            <li className="empty-state">{t("agents.emptySearch")}</li>
           ) : (
             filtered.map((agent) => {
               const active = selected?.id === agent.id;
@@ -82,7 +87,8 @@ export function AgentsPage({
                     </div>
                     <div className="list-item-desc">{agent.role}</div>
                     <div className="path-chip" title={agent.source}>
-                      来源：{agent.source}
+                      {t("agents.sourcePrefix")}
+                      {agent.source}
                     </div>
                   </button>
                 </li>
@@ -92,7 +98,7 @@ export function AgentsPage({
         </ul>
       </div>
 
-      <aside className="inspector" aria-label="Agent 详情">
+      <aside className="inspector" aria-label={t("agents.inspectorAria")}>
         {selected ? (
           <>
             <div className="inspector-header">
@@ -108,22 +114,22 @@ export function AgentsPage({
             </div>
             <dl className="meta-grid">
               <div>
-                <dt>Role</dt>
+                <dt>{t("agents.role")}</dt>
                 <dd>{selected.role}</dd>
               </div>
               <div>
-                <dt>Source</dt>
+                <dt>{t("agents.source")}</dt>
                 <dd className="mono wrap" title={selected.source}>
                   {selected.source}
                 </dd>
               </div>
               <div>
-                <dt>Recommended use</dt>
+                <dt>{t("agents.recommendedUse")}</dt>
                 <dd>{selected.recommendedUse}</dd>
               </div>
             </dl>
             <div className="preview-block">
-              <div className="preview-label">System prompt preview</div>
+              <div className="preview-label">{t("agents.promptPreview")}</div>
               <pre className="preview-body">{selected.prompt}</pre>
             </div>
             <div className="inspector-actions">
@@ -132,7 +138,7 @@ export function AgentsPage({
                 className="btn btn-primary"
                 onClick={() => onCopy(selected.prompt)}
               >
-                复制提示词
+                {t("agents.copyPrompt")}
               </button>
               {toast ? (
                 <span
@@ -145,7 +151,7 @@ export function AgentsPage({
             </div>
           </>
         ) : (
-          <p className="empty-state">选择一个 Agent 查看详情。</p>
+          <p className="empty-state">{t("agents.selectHint")}</p>
         )}
       </aside>
     </div>

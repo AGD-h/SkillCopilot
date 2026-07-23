@@ -1,17 +1,39 @@
+import { useI18n } from "../i18n/I18nProvider";
+import type { MessageKey } from "../i18n/messages";
 import type { PageId } from "../types";
 
 interface NavItem {
   id: PageId;
-  label: string;
-  hint: string;
+  labelKey: MessageKey;
+  hintKey: MessageKey;
   mark: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: "dashboard", label: "Dashboard", hint: "Project status", mark: "D" },
-  { id: "skills", label: "Skills", hint: "Reusable prompts", mark: "S" },
-  { id: "agents", label: "Agents", hint: "Role prompts", mark: "A" },
-  { id: "settings", label: "Settings", hint: "Local sources", mark: "G" },
+  {
+    id: "dashboard",
+    labelKey: "sidebar.nav.dashboard",
+    hintKey: "sidebar.nav.dashboardHint",
+    mark: "D",
+  },
+  {
+    id: "skills",
+    labelKey: "sidebar.nav.skills",
+    hintKey: "sidebar.nav.skillsHint",
+    mark: "S",
+  },
+  {
+    id: "agents",
+    labelKey: "sidebar.nav.agents",
+    hintKey: "sidebar.nav.agentsHint",
+    mark: "A",
+  },
+  {
+    id: "settings",
+    labelKey: "sidebar.nav.settings",
+    hintKey: "sidebar.nav.settingsHint",
+    mark: "G",
+  },
 ];
 
 interface SidebarProps {
@@ -27,12 +49,14 @@ export function Sidebar({
   workspaceName,
   branch,
 }: SidebarProps) {
+  const { t } = useI18n();
+
   return (
-    <aside className="sidebar" aria-label="主导航">
+    <aside className="sidebar" aria-label={t("sidebar.navAria")}>
       <div className="sidebar-top">
         <div className="brand">
           <div className="brand-name">SkillCopilot</div>
-          <div className="brand-sub">Local AI project cockpit</div>
+          <div className="brand-sub">{t("sidebar.brandSub")}</div>
         </div>
         <div className="workspace-pill" title={`${workspaceName} / ${branch}`}>
           <span className="workspace-pill-name">{workspaceName}</span>
@@ -41,7 +65,7 @@ export function Sidebar({
         </div>
       </div>
 
-      <nav className="sidebar-nav" aria-label="页面">
+      <nav className="sidebar-nav" aria-label={t("sidebar.pagesAria")}>
         {NAV_ITEMS.map((item) => {
           const active = page === item.id;
           return (
@@ -56,8 +80,8 @@ export function Sidebar({
                 {item.mark}
               </span>
               <span className="nav-text">
-                <span className="nav-label">{item.label}</span>
-                <span className="nav-hint">{item.hint}</span>
+                <span className="nav-label">{t(item.labelKey)}</span>
+                <span className="nav-hint">{t(item.hintKey)}</span>
               </span>
             </button>
           );
@@ -65,8 +89,8 @@ export function Sidebar({
       </nav>
 
       <div className="sidebar-bottom">
-        <div className="status-chip">Phase 1 Mock Mode</div>
-        <div className="status-note">No database attached</div>
+        <div className="status-chip">{t("sidebar.statusChip")}</div>
+        <div className="status-note">{t("sidebar.noDatabase")}</div>
       </div>
     </aside>
   );

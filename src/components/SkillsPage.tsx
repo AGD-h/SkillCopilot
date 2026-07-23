@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { scanLocalSkills } from "../lib/workspaceApi";
 import { mockSkills } from "../data/mock";
+import { useI18n } from "../i18n/I18nProvider";
+import { intlLocale } from "../i18n/locale";
+import { scanLocalSkills } from "../lib/workspaceApi";
 import type {
   LocalSkillItem,
   SkillItem,
@@ -10,6 +12,10 @@ import type {
 
 interface SkillsPageProps {
   rootPath: string;
+  query: string;
+  onQueryChange: (query: string) => void;
+  selectedId: string;
+  onSelect: (id: string) => void;
   onCopy: (text: string) => void;
   toast: ToastState | null;
 }
@@ -34,18 +40,19 @@ const fallbackSkills: LocalSkillItem[] = mockSkills.map(
   }),
 );
 
-function formatTimestamp(updatedAt: string): string {
-  const millis = Number(updatedAt);
-  if (!updatedAt || Number.isNaN(millis)) return "—";
-  return new Date(millis).toLocaleString();
-}
-
-export function SkillsPage({ rootPath, onCopy, toast }: SkillsPageProps) {
+export function SkillsPage({
+  rootPath,
+  query,
+  onQueryChange,
+  selectedId,
+  onSelect,
+  onCopy,
+  toast,
+}: SkillsPageProps) {
+  const { locale, t } = useI18n();
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [result, setResult] = useState<SkillScanResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState("");
   const requestSeq = useRef(0);
 
   const runScan = useCallback(() => {
@@ -114,64 +121,71 @@ export function SkillsPage({ rootPath, onCopy, toast }: SkillsPageProps) {
 
   const badge = (() => {
     if (loadState === "loading" && !result) {
-      return { className: "badge badge-mock", label: "Loading local skills" };
+      return {
+        className: "badge badge-mock",
+        label: t("skills.loadingBadge"),
+      };
     }
     if (isFallback) {
       return {
         className: "badge badge-mock",
-        label: `Fallback mock data · ${skills.length} skills`,
+        label: t("skills.fallbackBadge", { count: skills.length }),
       };
     }
     return {
       className: "badge",
-      label: `Real local data · ${skills.length} skills`,
+      label: t("skills.realBadge", { count: skills.length }),
     };
   })();
 
   const showEmptyState =
     loadState === "success" && skills.length === 0 && query.trim() === "";
 
+  const formatTimestamp = (updatedAt: string): string => {
+    const millis = Number(updatedAt);
+    if (!updatedAt || Number.isNaN(millis)) return "—";
+    return new Date(millis).toLocaleString(intlLocale(locale));
+  };
+
+  const partialDetails = [
+    failedRoots.length > 0
+      ? t("skills.failedRoots", { count: failedRoots.length })
+      : null,
+    warningCount > 0
+      ? t("skills.warningCount", { count: warningCount })
+      : null,
+    truncated ? t("skills.truncatedCap") : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <div className="page split-page skills-page">
       <div className="split-main">
         <header className="page-header compact-header">
           <div className="page-header-text">
-            <h1 className="page-title">Skills</h1>
-            <p className="page-subtitle">
-              扫描本地 SKILL.md，查看触发场景与只读正文。
-            </p>
+            <h1 className="page-title">{t("skills.title")}</h1>
+            <p className="page-subtitle">{t("skills.subtitle")}</p>
           </div>
           <span className={badge.className}>{badge.label}</span>
         </header>
 
         {isFallback ? (
           <div className="callout callout-warning" role="note">
-            <div className="callout-title">
-              无法扫描真实本地 Skill，已回退到 mock 数据
-            </div>
+            <div className="callout-title">{t("skills.fallbackTitle")}</div>
             <p className="callout-body">
-              {errorMessage ??
-                "调用 Tauri command 失败（在纯浏览器 Vite 环境下无 Tauri 运行时属正常）。"}
+              {errorMessage
+                ? `${t("skills.fallbackBody")} ${errorMessage}`
+                : t("skills.fallbackBody")}
             </p>
           </div>
         ) : null}
 
         {isPartial ? (
           <div className="callout callout-warning" role="note">
-            <div className="callout-title">
-              扫描完成，但部分项目被跳过
-            </div>
+            <div className="callout-title">{t("skills.partialTitle")}</div>
             <p className="callout-body">
-              {[
-                failedRoots.length > 0
-                  ? `${failedRoots.length} 个扫描根不可用`
-                  : null,
-                warningCount > 0 ? `${warningCount} 条警告` : null,
-                truncated ? "已达到 500 条 Skill 上限" : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-              。仍展示真实本地数据，未回退 mock。
+              {t("skills.partialBody", { details: partialDetails })}
             </p>
             {warningPreview.length > 0 ? (
               <ul className="callout-list">
@@ -181,25 +195,25 @@ export function SkillsPage({ rootPath, onCopy, toast }: SkillsPageProps) {
               </ul>
             ) : null}
             {remainingWarnings > 0 ? (
-              <p className="callout-body">另有 {remainingWarnings} 条警告未展开。</p>
+              <p className="callout-body">
+                {t("skills.remainingWarnings", { count: remainingWarnings })}
+              </p>
             ) : null}
             {warningsTruncated ? (
-              <p className="callout-body">
-                详细警告仅保留前 100 条。
-              </p>
+              <p className="callout-body">{t("skills.warningsTruncated")}</p>
             ) : null}
           </div>
         ) : null}
 
         <div className="toolbar">
           <label className="search-field">
-            <span className="sr-only">搜索 Skills</span>
+            <span className="sr-only">{t("skills.searchSr")}</span>
             <input
               type="search"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="搜索名称、描述、触发或路径…"
-              aria-label="搜索 Skills"
+              onChange={(e) => onQueryChange(e.target.value)}
+              placeholder={t("skills.searchPlaceholder")}
+              aria-label={t("skills.searchAria")}
             />
           </label>
           <button
@@ -208,17 +222,17 @@ export function SkillsPage({ rootPath, onCopy, toast }: SkillsPageProps) {
             onClick={runScan}
             disabled={loadState === "loading"}
           >
-            {loadState === "loading" ? "扫描中…" : "刷新"}
+            {loadState === "loading"
+              ? t("skills.refreshing")
+              : t("skills.refresh")}
           </button>
         </div>
 
-        <ul className="item-list" aria-label="Skill 列表">
+        <ul className="item-list" aria-label={t("skills.listAria")}>
           {showEmptyState ? (
-            <li className="empty-state">
-              未在默认扫描目录中找到 SKILL.md。
-            </li>
+            <li className="empty-state">{t("skills.emptyScan")}</li>
           ) : filtered.length === 0 ? (
-            <li className="empty-state">没有匹配的 Skill。</li>
+            <li className="empty-state">{t("skills.emptySearch")}</li>
           ) : (
             filtered.map((skill) => {
               const active = selected?.id === skill.id;
@@ -227,12 +241,14 @@ export function SkillsPage({ rootPath, onCopy, toast }: SkillsPageProps) {
                   <button
                     type="button"
                     className={`list-item${active ? " is-selected" : ""}`}
-                    onClick={() => setSelectedId(skill.id)}
+                    onClick={() => onSelect(skill.id)}
                     aria-current={active ? "true" : undefined}
                   >
                     <div className="list-item-top">
                       <span className="list-item-title">{skill.name}</span>
-                      <span className="tag tag-local">{skill.tag}</span>
+                      <span className="tag tag-local">
+                        {t("skills.tagLocal")}
+                      </span>
                     </div>
                     <div className="list-item-desc">{skill.description}</div>
                     <div className="path-chip" title={skill.relativePath}>
@@ -246,7 +262,7 @@ export function SkillsPage({ rootPath, onCopy, toast }: SkillsPageProps) {
         </ul>
       </div>
 
-      <aside className="inspector" aria-label="Skill 详情">
+      <aside className="inspector" aria-label={t("skills.inspectorAria")}>
         {selected ? (
           <>
             <div className="inspector-header">
@@ -255,34 +271,34 @@ export function SkillsPage({ rootPath, onCopy, toast }: SkillsPageProps) {
             </div>
             <dl className="meta-grid">
               <div>
-                <dt>Absolute path</dt>
+                <dt>{t("skills.absolutePath")}</dt>
                 <dd className="mono wrap" title={selected.path}>
                   {selected.path}
                 </dd>
               </div>
               <div>
-                <dt>Relative path</dt>
+                <dt>{t("skills.relativePath")}</dt>
                 <dd className="mono wrap" title={selected.relativePath}>
                   {selected.relativePath}
                 </dd>
               </div>
               <div>
-                <dt>Source root</dt>
+                <dt>{t("skills.sourceRoot")}</dt>
                 <dd className="mono wrap" title={selected.sourceRoot}>
                   {selected.sourceRoot}
                 </dd>
               </div>
               <div>
-                <dt>Trigger</dt>
+                <dt>{t("skills.trigger")}</dt>
                 <dd>{selected.trigger}</dd>
               </div>
               <div>
-                <dt>Updated</dt>
+                <dt>{t("skills.updated")}</dt>
                 <dd>{formatTimestamp(selected.updatedAt)}</dd>
               </div>
             </dl>
             <div className="preview-block">
-              <div className="preview-label">Skill body</div>
+              <div className="preview-label">{t("skills.body")}</div>
               <pre className="preview-body">{selected.body}</pre>
             </div>
             <div className="inspector-actions">
@@ -291,14 +307,14 @@ export function SkillsPage({ rootPath, onCopy, toast }: SkillsPageProps) {
                 className="btn btn-secondary"
                 onClick={() => onCopy(selected.path)}
               >
-                复制路径
+                {t("skills.copyPath")}
               </button>
               <button
                 type="button"
                 className="btn btn-primary"
                 onClick={() => onCopy(selected.body)}
               >
-                复制正文
+                {t("skills.copyBody")}
               </button>
               {toast ? (
                 <span
@@ -313,8 +329,8 @@ export function SkillsPage({ rootPath, onCopy, toast }: SkillsPageProps) {
         ) : (
           <p className="empty-state">
             {showEmptyState
-              ? "未在默认扫描目录中找到 SKILL.md。"
-              : "选择一个 Skill 查看详情。"}
+              ? t("skills.emptyScan")
+              : t("skills.selectHint")}
           </p>
         )}
       </aside>
