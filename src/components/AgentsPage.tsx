@@ -12,16 +12,18 @@ import type {
 } from "../types";
 
 interface AgentsPageProps {
-  rootPath: string;
+  rootPath: string | null;
   query: string;
   onQueryChange: (query: string) => void;
   selectedId: string;
   onSelect: (id: string) => void;
   onCopy: (text: string) => void;
+  onPickWorkspace: () => void;
+  picking: boolean;
   toast: ToastState | null;
 }
 
-type LoadState = "loading" | "success" | "fallback";
+type LoadState = "idle" | "loading" | "success" | "fallback";
 
 const fallbackAgents: LocalAgentItem[] = mockAgents.map(
   (agent: AgentItem): LocalAgentItem => ({
@@ -45,19 +47,32 @@ export function AgentsPage({
   selectedId,
   onSelect,
   onCopy,
+  onPickWorkspace,
+  picking,
   toast,
 }: AgentsPageProps) {
   const { locale, t } = useI18n();
-  const [loadState, setLoadState] = useState<LoadState>("loading");
+  const [loadState, setLoadState] = useState<LoadState>(
+    rootPath ? "loading" : "idle",
+  );
   const [result, setResult] = useState<AgentScanResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const requestSeq = useRef(0);
 
   const runScan = useCallback(() => {
+    if (!rootPath) {
+      requestSeq.current += 1;
+      setLoadState("idle");
+      setResult(null);
+      setErrorMessage(null);
+      return;
+    }
+
     const seq = requestSeq.current + 1;
     requestSeq.current = seq;
     setLoadState("loading");
     setErrorMessage(null);
+    setResult(null);
 
     scanAgentConfigs(rootPath)
       .then((scan) => {
@@ -79,6 +94,34 @@ export function AgentsPage({
       requestSeq.current += 1;
     };
   }, [runScan]);
+
+  if (!rootPath) {
+    return (
+      <div className="page agents-page">
+        <header className="page-header">
+          <div className="page-header-text">
+            <h1 className="page-title">{t("agents.title")}</h1>
+            <p className="page-subtitle">{t("agents.subtitle")}</p>
+          </div>
+          <span className="badge badge-mock">{t("agents.noWorkspaceBadge")}</span>
+        </header>
+        <div className="empty-workspace-panel" role="note">
+          <h2 className="section-title">{t("agents.noWorkspaceTitle")}</h2>
+          <p className="empty-workspace-body">{t("agents.noWorkspaceBody")}</p>
+          <p className="hint-text">{t("common.workspaceReadonlyHint")}</p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={picking}
+            aria-busy={picking || undefined}
+            onClick={onPickWorkspace}
+          >
+            {picking ? t("common.selectingFolder") : t("common.selectFolder")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const isFallback = loadState === "fallback";
   const agents = isFallback ? fallbackAgents : (result?.agents ?? []);

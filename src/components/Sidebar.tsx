@@ -41,6 +41,7 @@ interface SidebarProps {
   onNavigate: (page: PageId) => void;
   workspaceName: string;
   branch: string;
+  title?: string;
 }
 
 export function Sidebar({
@@ -48,6 +49,7 @@ export function Sidebar({
   onNavigate,
   workspaceName,
   branch,
+  title,
 }: SidebarProps) {
   const { t } = useI18n();
 
@@ -58,7 +60,10 @@ export function Sidebar({
           <div className="brand-name">SkillCopilot</div>
           <div className="brand-sub">{t("sidebar.brandSub")}</div>
         </div>
-        <div className="workspace-pill" title={`${workspaceName} / ${branch}`}>
+        <div
+          className="workspace-pill"
+          title={title ?? `${workspaceName} / ${branch}`}
+        >
           <span className="workspace-pill-name">{workspaceName}</span>
           <span className="workspace-pill-sep">/</span>
           <span className="workspace-pill-branch">{branch}</span>

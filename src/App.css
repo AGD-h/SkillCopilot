@@ -1129,6 +1129,58 @@ button:disabled {
 .settings-action {
   flex: 0 0 auto;
   max-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.settings-action .btn {
+  width: 100%;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--panel-soft, transparent);
+}
+
+.btn-ghost:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.path-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-workspace-panel {
+  margin: 0 0 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  max-width: 560px;
+}
+
+.empty-workspace-body {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.45;
+  font-size: 13px;
 }
 
 .hint-text {
@@ -1227,6 +1279,11 @@ button:disabled {
   .settings-grid {
     grid-template-columns: 1fr;
     flex-direction: column;
+  }
+
+  .settings-action {
+    max-width: none;
+    width: 100%;
   }
 
   .settings-grid {

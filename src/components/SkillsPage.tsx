@@ -11,16 +11,18 @@ import type {
 } from "../types";
 
 interface SkillsPageProps {
-  rootPath: string;
+  rootPath: string | null;
   query: string;
   onQueryChange: (query: string) => void;
   selectedId: string;
   onSelect: (id: string) => void;
   onCopy: (text: string) => void;
+  onPickWorkspace: () => void;
+  picking: boolean;
   toast: ToastState | null;
 }
 
-type LoadState = "loading" | "success" | "fallback";
+type LoadState = "idle" | "loading" | "success" | "fallback";
 
 /** Adapts the Phase 1 mock skills into the real scan item shape so the
  * fallback view can reuse the same rendering path without lying about being
@@ -47,19 +49,32 @@ export function SkillsPage({
   selectedId,
   onSelect,
   onCopy,
+  onPickWorkspace,
+  picking,
   toast,
 }: SkillsPageProps) {
   const { locale, t } = useI18n();
-  const [loadState, setLoadState] = useState<LoadState>("loading");
+  const [loadState, setLoadState] = useState<LoadState>(
+    rootPath ? "loading" : "idle",
+  );
   const [result, setResult] = useState<SkillScanResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const requestSeq = useRef(0);
 
   const runScan = useCallback(() => {
+    if (!rootPath) {
+      requestSeq.current += 1;
+      setLoadState("idle");
+      setResult(null);
+      setErrorMessage(null);
+      return;
+    }
+
     const seq = requestSeq.current + 1;
     requestSeq.current = seq;
     setLoadState("loading");
     setErrorMessage(null);
+    setResult(null);
 
     scanLocalSkills(rootPath)
       .then((scan) => {
@@ -83,6 +98,34 @@ export function SkillsPage({
       requestSeq.current += 1;
     };
   }, [runScan]);
+
+  if (!rootPath) {
+    return (
+      <div className="page skills-page">
+        <header className="page-header">
+          <div className="page-header-text">
+            <h1 className="page-title">{t("skills.title")}</h1>
+            <p className="page-subtitle">{t("skills.subtitle")}</p>
+          </div>
+          <span className="badge badge-mock">{t("skills.noWorkspaceBadge")}</span>
+        </header>
+        <div className="empty-workspace-panel" role="note">
+          <h2 className="section-title">{t("skills.noWorkspaceTitle")}</h2>
+          <p className="empty-workspace-body">{t("skills.noWorkspaceBody")}</p>
+          <p className="hint-text">{t("common.workspaceReadonlyHint")}</p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={picking}
+            aria-busy={picking || undefined}
+            onClick={onPickWorkspace}
+          >
+            {picking ? t("common.selectingFolder") : t("common.selectFolder")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const isFallback = loadState === "fallback";
   const skills: LocalSkillItem[] = isFallback

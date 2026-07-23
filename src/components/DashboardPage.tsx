@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useI18n } from "../i18n/I18nProvider";
 import { intlLocale } from "../i18n/locale";
 import { readWorkspaceStatus } from "../lib/workspaceApi";
@@ -12,12 +12,15 @@ import type {
 interface DashboardPageProps {
   workspace: WorkspaceInfo;
   phases: TaskPhase[];
-  rootPath: string;
+  rootPath: string | null;
   onCopyNextStep: (text: string) => void;
+  onPickWorkspace: () => void;
+  picking: boolean;
+  onGitBranch: (branch: string | null) => void;
   toast: ToastState | null;
 }
 
-type LoadState = "loading" | "ok" | "error";
+type LoadState = "idle" | "loading" | "ok" | "error";
 
 function phaseStatusKey(
   status: TaskPhase["status"],
@@ -32,35 +35,122 @@ export function DashboardPage({
   phases,
   rootPath,
   onCopyNextStep,
+  onPickWorkspace,
+  picking,
+  onGitBranch,
   toast,
 }: DashboardPageProps) {
   const { locale, t } = useI18n();
-  const [loadState, setLoadState] = useState<LoadState>("loading");
+  const [loadState, setLoadState] = useState<LoadState>(
+    rootPath ? "loading" : "idle",
+  );
   const [status, setStatus] = useState<WorkspaceStatus | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const requestSeq = useRef(0);
 
   useEffect(() => {
-    let active = true;
+    if (!rootPath) {
+      requestSeq.current += 1;
+      setLoadState("idle");
+      setStatus(null);
+      setErrorMessage(null);
+      onGitBranch(null);
+      return;
+    }
+
+    const seq = requestSeq.current + 1;
+    requestSeq.current = seq;
     setLoadState("loading");
     setErrorMessage(null);
+    setStatus(null);
+    onGitBranch(null);
 
     readWorkspaceStatus(rootPath)
       .then((result) => {
-        if (!active) return;
+        if (seq !== requestSeq.current) return;
         setStatus(result);
         setLoadState("ok");
+        const branch =
+          result.git.branchLine.trim() === ""
+            ? null
+            : result.git.branchName || null;
+        onGitBranch(branch);
       })
       .catch((err: unknown) => {
-        if (!active) return;
+        if (seq !== requestSeq.current) return;
         setStatus(null);
         setErrorMessage(err instanceof Error ? err.message : String(err));
         setLoadState("error");
+        onGitBranch(null);
       });
 
     return () => {
-      active = false;
+      requestSeq.current += 1;
     };
-  }, [rootPath]);
+  }, [rootPath, onGitBranch]);
+
+  if (!rootPath) {
+    return (
+      <div className="page dashboard-page">
+        <header className="page-header">
+          <div className="page-header-text">
+            <h1 className="page-title">{t("dashboard.title")}</h1>
+            <p className="page-subtitle">{t("dashboard.subtitle")}</p>
+          </div>
+          <span className="badge badge-mock">
+            {t("dashboard.noWorkspaceBadge")}
+          </span>
+        </header>
+
+        <div className="empty-workspace-panel" role="note">
+          <h2 className="section-title">{t("dashboard.noWorkspaceTitle")}</h2>
+          <p className="empty-workspace-body">
+            {t("dashboard.noWorkspaceBody")}
+          </p>
+          <p className="hint-text">{t("common.workspaceReadonlyHint")}</p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={picking}
+            aria-busy={picking || undefined}
+            onClick={onPickWorkspace}
+          >
+            {picking
+              ? t("common.selectingFolder")
+              : t("common.selectFolder")}
+          </button>
+        </div>
+
+        <section className="phase-timeline" aria-labelledby="phase-title">
+          <h2 id="phase-title" className="section-title">
+            {t("dashboard.phaseTimeline")}
+          </h2>
+          <ol className="timeline">
+            {phases.map((phase, index) => (
+              <li
+                key={phase.id}
+                className={`timeline-item is-${phase.status}`}
+              >
+                <div className="timeline-dot" aria-hidden="true" />
+                {index < phases.length - 1 ? (
+                  <div className="timeline-line" aria-hidden="true" />
+                ) : null}
+                <div className="timeline-content">
+                  <div className="timeline-name">
+                    {phase.name}
+                    <span className={`phase-badge is-${phase.status}`}>
+                      {t(phaseStatusKey(phase.status))}
+                    </span>
+                  </div>
+                  <div className="timeline-summary">{phase.summary}</div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      </div>
+    );
+  }
 
   const isLive = loadState === "ok" && status !== null;
   const git = status?.git ?? null;
@@ -156,9 +246,9 @@ export function DashboardPage({
           </div>
           <div
             className="stat-path"
-            title={isLive ? status.rootPath : workspace.path}
+            title={isLive ? status.rootPath : rootPath}
           >
-            {isLive ? status.rootPath : workspace.path}
+            {isLive ? status.rootPath : rootPath}
           </div>
         </article>
         <article className="stat-card">
@@ -178,6 +268,11 @@ export function DashboardPage({
                 {git?.rawStatus || t("dashboard.gitStatusMissing")}
               </div>
             </>
+          ) : loadState === "loading" ? (
+            <>
+              <div className="stat-title">{t("common.loading")}</div>
+              <div className="stat-muted">{t("sidebar.branchPlaceholder")}</div>
+            </>
           ) : (
             <>
               <div className="stat-title">{workspace.gitSummary}</div>
@@ -190,7 +285,9 @@ export function DashboardPage({
           <div className="stat-title">
             {isLive
               ? t("dashboard.dataSourceLive")
-              : t("dashboard.dataSourceMock")}
+              : loadState === "loading"
+                ? t("common.loading")
+                : t("dashboard.dataSourceMock")}
           </div>
           <div className="stat-muted">
             {isLive

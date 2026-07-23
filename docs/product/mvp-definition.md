@@ -1,6 +1,6 @@
 # SkillCopilot MVP 产品定义（第一版）
 
-状态：Phase 1–5 已完成；Phase 5 结论为当前 MVP 不引入 SQLite。
+状态：Phase 1–5 已完成；Workspace 文件夹选择与 localStorage 持久化已实现；Phase 5 结论为当前 MVP 不引入 SQLite。
 日期：2026-07-23
 范围：本地桌面应用；Windows 10/11 优先；不引入 SQLite、云同步、账号体系。
 
@@ -236,9 +236,19 @@ Workspace 1—* TaskPlan
 ### Phase 5：再评估是否引入 SQLite — 已完成（2026-07-23）
 
 - **书面结论**：当前 MVP **不引入 SQLite**。继续以源文件为权威数据；locale 等轻量偏好继续使用 localStorage；Workspace 绑定可用轻量持久化，不需要数据库。
-- **评估文档**：[`docs/architecture/sqlite-evaluation.md`](../architecture/sqlite-evaluation.md)（含决策矩阵、成本、ADR 与重评触发条件）。
-- **未做**：未安装/引入 SQLite crate 或 npm 包；未建 schema/migration；未创建数据库文件；未改产品代码。
+- 评估文档：[`docs/architecture/sqlite-evaluation.md`](../architecture/sqlite-evaluation.md)（含决策矩阵、成本、ADR 与重评触发条件）。
+- **未做**：未安装/引入 SQLite crate 或 npm 包；未建 schema/migration；未创建数据库文件。
 - 仅当重评触发条件成立时再开新一轮书面评估，之后才可考虑数据库。
+
+### Workspace 文件夹选择与轻量持久化 — 已完成
+
+- 官方 Tauri Dialog：`tauri-plugin-dialog` + `@tauri-apps/plugin-dialog`，`open({ directory: true, multiple: false })`。
+- 权限：capabilities 仅 `dialog:allow-open`。
+- 持久化：localStorage key `skillcopilot.workspaceRoot`（仅路径）；无选择时为 `null`，不回退硬编码路径。
+- 未选择时可打开应用；Dashboard / Skills / Agents 不调用真实读取/扫描；Settings 可选择或忘记 Workspace。
+- 切换 Workspace 后三页重载，带请求序号防竞态；清空 Skill/Agent 搜索与选中。
+- 浏览器 `pnpm dev` 无原生对话框时提示在桌面应用中选择，不伪造结果。
+- 仍不引入 SQLite。
 
 ---
 
@@ -250,10 +260,11 @@ MVP（完成 Phase 1–4；Phase 5 已产出评估结论）应能验证：
 2. **状态可信**：对 `E:\SkillCopilot`（或用户绑定的仓库），Dashboard 显示的分支/脏状态与终端 `git status --short --branch` 一致；Handoff 摘要来自真实 `HANDOFF.md`。
 3. **Skill 可读**：至少一个本地 Skill 可在列表中打开并阅读全文。
 4. **Agent 可复制**：至少一个 Agent 提示词可一键复制，粘贴内容与源文件一致。
-5. **无越界**：依赖中无 SQLite；无云同步/登录相关功能；应用不自动提交或推送 Git。
+5. **无越界**：依赖中无 SQLite；无云同步/登录相关功能；应用不自动提交或推送 Git；Workspace 路径仅 localStorage 偏好。
 6. **交接可演示**：按第 3 节流程走完一轮后，用户能说出「当前下一步」且与 Handoff 一致。
 7. **文档同步**：`HANDOFF.md` 的 Last Known Next Step 反映真实进度；本文件路径保持有效。
 8. **三语言界面**：Settings 可在 zh-CN / en / zh-TW 间切换；刷新后记住选择；本地文件与提示词仍显示原文；切换语言不重置页面状态或重新扫描。
+9. **Workspace 可选**：可选择/更改/忘记本地文件夹；重启后恢复上次路径；未选择时不白屏且不伪造真实本地数据。
 
 Phase 1 单独可提前验收：仅 mock 数据下四页可浏览 + `pnpm build` 通过。
 

@@ -3,6 +3,14 @@ export const zhCN = {
   // App / toast
   "toast.copied": "已复制",
   "toast.copyFailed": "复制失败，请手动选择文本",
+  "toast.workspaceSwitched": "Workspace 已切换",
+  "toast.workspaceSwitchedUnsaved":
+    "已切换，但无法保存；重启后需要重新选择。",
+  "toast.workspaceCleared": "Workspace 已清除",
+  "toast.workspaceClearFailed": "无法清除已保存的 Workspace",
+  "toast.workspacePickFailed": "选择文件夹失败",
+  "toast.workspacePickUnavailable":
+    "请在桌面应用中选择文件夹（浏览器预览不支持原生对话框）",
 
   // Sidebar
   "sidebar.navAria": "主导航",
@@ -16,8 +24,10 @@ export const zhCN = {
   "sidebar.nav.agentsHint": "角色提示词",
   "sidebar.nav.settings": "设置",
   "sidebar.nav.settingsHint": "本地数据来源",
-  "sidebar.statusChip": "Phase 4 · 本地数据",
+  "sidebar.statusChip": "Workspace · 本地偏好",
   "sidebar.noDatabase": "未挂载数据库",
+  "sidebar.workspaceUnset": "未选择工作区",
+  "sidebar.branchPlaceholder": "—",
 
   // Common labels
   "common.workspace": "工作区",
@@ -28,6 +38,14 @@ export const zhCN = {
   "common.planned": "计划中",
   "common.realLocalData": "真实本地数据",
   "common.fallbackMockData": "回退模拟数据",
+  "common.selectFolder": "选择文件夹",
+  "common.changeFolder": "更改文件夹",
+  "common.selectingFolder": "正在选择…",
+  "common.forgetWorkspace": "忘记 Workspace",
+  "common.needWorkspace": "请先选择 Workspace",
+  "common.workspaceReadonlyHint":
+    "选择后将只读检查项目状态、Skills 和 Agents。",
+  "common.currentWorkspace": "当前 Workspace",
 
   // Phase status
   "phase.status.done": "已完成",
@@ -42,7 +60,7 @@ export const zhCN = {
   "phase.summary.2": "只读 HANDOFF / AGENTS / git status",
   "phase.summary.3": "扫描本地 Skills",
   "phase.summary.4": "管理 Agents 与复制提示词",
-  "phase.summary.5": "再评估是否引入 SQLite",
+  "phase.summary.5": "书面评估：当前不引入 SQLite",
 
   // Dashboard
   "dashboard.title": "仪表盘",
@@ -52,6 +70,10 @@ export const zhCN = {
   "dashboard.fallbackTitle": "无法读取真实本地状态，已回退到模拟数据",
   "dashboard.fallbackBody":
     "调用 Tauri command 失败（在纯浏览器 Vite 环境下无 Tauri 运行时属正常）。",
+  "dashboard.noWorkspaceBadge": "未选择工作区",
+  "dashboard.noWorkspaceTitle": "尚未选择 Workspace",
+  "dashboard.noWorkspaceBody":
+    "选择本地项目文件夹后，将只读检查 HANDOFF、Git、Skills 与 Agents。不会写入该目录。",
   "dashboard.statsAria": "状态摘要",
   "dashboard.gitStatus": "Git 状态",
   "dashboard.gitUnavailable": "Git 不可用",
@@ -72,20 +94,22 @@ export const zhCN = {
   "dashboard.sourcePrefix": "来源：",
   "dashboard.constraints": "约束",
   "dashboard.phaseTimeline": "阶段时间线",
-  "dashboard.mockGitSummary": "main · 已同步",
-  "dashboard.mockWorkingTree": "工作区干净",
-  "dashboard.mockPhaseLabel": "MVP Phase 4 已完成",
-  "dashboard.mockPhaseFocus": "本地 Skill / Agent 扫描 · 真实数据",
+  "dashboard.mockGitSummary": "（模拟）",
+  "dashboard.mockWorkingTree": "模拟工作树状态",
+  "dashboard.mockPhaseLabel": "MVP Workspace 绑定",
+  "dashboard.mockPhaseFocus": "文件夹选择 · localStorage 偏好",
   "dashboard.mockCurrentGoal": "本地桌面 AI 项目主脑 + Skill / Agent 管理器",
   "dashboard.mockNextStep":
-    "Phase 5：书面评估是否需要 SQLite；在得出结论前不得引入数据库。",
+    "完成 MVP 回归、安装包验证与发布准备（仍不引入 SQLite）。",
   "dashboard.mockNextStepSource":
-    "HANDOFF.md / docs/product/mvp-definition.md（模拟）",
+    "HANDOFF.md / docs/product/mvp-definition.md（模拟回退）",
   "dashboard.mockConstraint.1": "不添加 SQLite",
   "dashboard.mockConstraint.2": "不实现聊天 UI",
   "dashboard.mockConstraint.3": "不接云同步",
   "dashboard.mockConstraint.4": "不自动 commit / push 业务代码",
   "dashboard.mockUpdated": "模拟时间戳",
+  "dashboard.mockName": "模拟工作区",
+  "dashboard.mockPath": "(mock-fallback)",
 
   // Skills
   "skills.title": "技能",
@@ -122,6 +146,10 @@ export const zhCN = {
   "skills.copyBody": "复制正文",
   "skills.refreshing": "扫描中…",
   "skills.refresh": "刷新",
+  "skills.noWorkspaceBadge": "未选择工作区",
+  "skills.noWorkspaceTitle": "请先选择 Workspace",
+  "skills.noWorkspaceBody":
+    "选择本地项目文件夹后，将扫描该工作区与用户级 Skill 根中的 SKILL.md。",
 
   // Agents
   "agents.title": "智能体",
@@ -167,15 +195,18 @@ export const zhCN = {
   "agents.refreshing": "扫描中…",
   "agents.refresh": "刷新",
   "agents.selectHint": "选择一个智能体查看详情。",
+  "agents.noWorkspaceBadge": "未选择工作区",
+  "agents.noWorkspaceTitle": "请先选择 Workspace",
+  "agents.noWorkspaceBody":
+    "选择本地项目文件夹后，将扫描该工作区的 Agent 配置文件。",
 
   // Settings
   "settings.title": "设置",
-  "settings.subtitle":
-    "本地数据来源与阶段门禁说明（Phase 4 已只读扫描 Skills 与 Agents）。",
-  "settings.pickerBadge": "工作区选择器尚未实现",
-  "settings.phase4Title": "Phase 4：已接入真实本地 Agent 配置扫描",
+  "settings.subtitle": "绑定本地 Workspace，并说明只读数据来源与阶段门禁。",
+  "settings.pickerBadge": "可选择本地文件夹",
+  "settings.phase4Title": "Workspace：本地文件夹绑定",
   "settings.phase4Body":
-    "Dashboard 只读读取 HANDOFF.md、AGENTS.md 与 Git；Skills 扫描本地 SKILL.md；Agents 将 AGENTS.md、每个 Cursor .mdc 与 copilot-instructions.md 分别映射为只读 Agent。工作区仍固定为 E:\\SkillCopilot，文件夹选择器尚未实现。",
+    "Dashboard 只读读取 HANDOFF.md、AGENTS.md 与 Git；Skills 扫描工作区与用户级 SKILL.md；Agents 扫描当前工作区的 AGENTS.md、Cursor .mdc 与 copilot-instructions.md。路径保存在 localStorage（skillcopilot.workspaceRoot），不使用 SQLite。",
   "settings.languageTitle": "界面语言",
   "settings.languageAria": "界面语言",
   "settings.languageHint":
@@ -185,11 +216,16 @@ export const zhCN = {
   "settings.locale.zhTW": "繁體中文",
   "settings.workspace": "工作区",
   "settings.currentPath": "当前路径",
-  "settings.workspaceStatus":
-    "状态：固定绑定（仪表盘、技能与智能体页已按此路径读取真实文件）",
+  "settings.workspaceStatusBound":
+    "已绑定：Dashboard / Skills / Agents 将只读读取此路径（偏好保存在本地）。",
+  "settings.workspaceStatusUnset": "未绑定：选择本地项目文件夹后开始读取。",
   "settings.changeFolder": "更改文件夹",
+  "settings.selectFolder": "选择文件夹",
+  "settings.selectingFolder": "正在选择…",
+  "settings.forgetWorkspace": "忘记 Workspace",
   "settings.pickerHint":
-    "工作区选择器仍未实现，当前固定为 E:\\SkillCopilot。",
+    "使用系统文件夹对话框选择 Workspace。取消选择不会改变当前绑定。",
+  "settings.forgetHint": "仅清除本机偏好，不会删除或修改所选目录中的任何文件。",
   "settings.dataSources": "数据来源",
   "settings.skillRootsHint":
     "已接入的只读本地来源；用户级来源仅用于 Skills，Agents 仅扫描当前工作区。",
@@ -213,7 +249,7 @@ export const zhCN = {
   "settings.gate.2": "Phase 2：读取本地 HANDOFF / AGENTS / Git 状态",
   "settings.gate.3": "Phase 3：扫描 Skills",
   "settings.gate.4": "Phase 4：管理 Agents",
-  "settings.gate.5": "Phase 5：再评估 SQLite",
+  "settings.gate.5": "Phase 5：书面评估（当前不引入 SQLite）",
   "settings.safety.1": "无云同步",
   "settings.safety.2": "无账号",
   "settings.safety.3": "无数据库",
@@ -225,6 +261,14 @@ export type MessageKey = keyof typeof zhCN;
 export const en: Record<MessageKey, string> = {
   "toast.copied": "Copied",
   "toast.copyFailed": "Copy failed — select the text manually",
+  "toast.workspaceSwitched": "Workspace switched",
+  "toast.workspaceSwitchedUnsaved":
+    "Switched for this session, but could not save; you will need to select again after restart.",
+  "toast.workspaceCleared": "Workspace cleared",
+  "toast.workspaceClearFailed": "Could not clear the saved Workspace",
+  "toast.workspacePickFailed": "Could not select a folder",
+  "toast.workspacePickUnavailable":
+    "Choose a folder in the desktop app (browser preview has no native folder dialog)",
 
   "sidebar.navAria": "Main navigation",
   "sidebar.pagesAria": "Pages",
@@ -237,8 +281,10 @@ export const en: Record<MessageKey, string> = {
   "sidebar.nav.agentsHint": "Role prompts",
   "sidebar.nav.settings": "Settings",
   "sidebar.nav.settingsHint": "Local sources",
-  "sidebar.statusChip": "Phase 4 · Local data",
+  "sidebar.statusChip": "Workspace · local preference",
   "sidebar.noDatabase": "No database attached",
+  "sidebar.workspaceUnset": "No workspace selected",
+  "sidebar.branchPlaceholder": "—",
 
   "common.workspace": "Workspace",
   "common.source": "Source",
@@ -248,6 +294,14 @@ export const en: Record<MessageKey, string> = {
   "common.planned": "Planned",
   "common.realLocalData": "Real local data",
   "common.fallbackMockData": "Fallback mock data",
+  "common.selectFolder": "Select folder",
+  "common.changeFolder": "Change folder",
+  "common.selectingFolder": "Selecting…",
+  "common.forgetWorkspace": "Forget Workspace",
+  "common.needWorkspace": "Select a Workspace first",
+  "common.workspaceReadonlyHint":
+    "After you select a folder, SkillCopilot will read project status, Skills, and Agents read-only.",
+  "common.currentWorkspace": "Current Workspace",
 
   "phase.status.done": "Done",
   "phase.status.in_progress": "In progress",
@@ -261,7 +315,7 @@ export const en: Record<MessageKey, string> = {
   "phase.summary.2": "Read-only HANDOFF / AGENTS / git status",
   "phase.summary.3": "Scan local Skills",
   "phase.summary.4": "Manage Agents and copy prompts",
-  "phase.summary.5": "Re-evaluate SQLite",
+  "phase.summary.5": "Written evaluation: SQLite not needed now",
 
   "dashboard.title": "Dashboard",
   "dashboard.subtitle": "Review project status, handoff constraints, and next steps.",
@@ -270,6 +324,10 @@ export const en: Record<MessageKey, string> = {
   "dashboard.fallbackTitle": "Could not read real local status — using mock data",
   "dashboard.fallbackBody":
     "Tauri command failed (expected in plain Vite browser mode without the Tauri runtime).",
+  "dashboard.noWorkspaceBadge": "No workspace selected",
+  "dashboard.noWorkspaceTitle": "No Workspace selected",
+  "dashboard.noWorkspaceBody":
+    "Choose a local project folder to read HANDOFF, Git, Skills, and Agents read-only. SkillCopilot will not write into that folder.",
   "dashboard.statsAria": "Status summary",
   "dashboard.gitStatus": "Git status",
   "dashboard.gitUnavailable": "Git unavailable",
@@ -290,21 +348,23 @@ export const en: Record<MessageKey, string> = {
   "dashboard.sourcePrefix": "Source: ",
   "dashboard.constraints": "Constraints",
   "dashboard.phaseTimeline": "Phase timeline",
-  "dashboard.mockGitSummary": "main · synced",
-  "dashboard.mockWorkingTree": "Working tree clean",
-  "dashboard.mockPhaseLabel": "MVP Phase 4 complete",
-  "dashboard.mockPhaseFocus": "Local Skill / Agent scans · real data",
+  "dashboard.mockGitSummary": "(mock)",
+  "dashboard.mockWorkingTree": "Mock working tree",
+  "dashboard.mockPhaseLabel": "MVP Workspace binding",
+  "dashboard.mockPhaseFocus": "Folder picker · localStorage preference",
   "dashboard.mockCurrentGoal":
     "Local desktop AI project cockpit + Skill / Agent manager",
   "dashboard.mockNextStep":
-    "Phase 5: write an evaluation of whether SQLite is needed; do not add a database before that conclusion.",
+    "Finish MVP regression, installer verification, and release prep (still no SQLite).",
   "dashboard.mockNextStepSource":
-    "HANDOFF.md / docs/product/mvp-definition.md (mock)",
+    "HANDOFF.md / docs/product/mvp-definition.md (mock fallback)",
   "dashboard.mockConstraint.1": "Do not add SQLite",
   "dashboard.mockConstraint.2": "Do not build a chat UI",
   "dashboard.mockConstraint.3": "No cloud sync",
   "dashboard.mockConstraint.4": "Do not auto commit / push product code",
   "dashboard.mockUpdated": "Mock timestamp",
+  "dashboard.mockName": "Mock workspace",
+  "dashboard.mockPath": "(mock-fallback)",
 
   "skills.title": "Skills",
   "skills.subtitle": "Scan local SKILL.md files and inspect triggers and read-only bodies.",
@@ -340,6 +400,10 @@ export const en: Record<MessageKey, string> = {
   "skills.copyBody": "Copy body",
   "skills.refreshing": "Scanning…",
   "skills.refresh": "Refresh",
+  "skills.noWorkspaceBadge": "No workspace selected",
+  "skills.noWorkspaceTitle": "Select a Workspace first",
+  "skills.noWorkspaceBody":
+    "After you choose a local project folder, SkillCopilot will scan SKILL.md under that workspace and the existing user-level Skill roots.",
 
   "agents.title": "Agents",
   "agents.subtitle": "Scan workspace Agent configs and copy complete source prompts.",
@@ -384,14 +448,18 @@ export const en: Record<MessageKey, string> = {
   "agents.refreshing": "Scanning…",
   "agents.refresh": "Refresh",
   "agents.selectHint": "Select an agent to view details.",
+  "agents.noWorkspaceBadge": "No workspace selected",
+  "agents.noWorkspaceTitle": "Select a Workspace first",
+  "agents.noWorkspaceBody":
+    "After you choose a local project folder, SkillCopilot will scan Agent config files in that workspace.",
 
   "settings.title": "Settings",
   "settings.subtitle":
-    "Local data sources and phase gates (Phase 4 scans Skills and Agents read-only).",
-  "settings.pickerBadge": "Workspace picker not implemented",
-  "settings.phase4Title": "Phase 4: real local Agent config scanning is live",
+    "Bind a local Workspace and review read-only data sources and phase gates.",
+  "settings.pickerBadge": "Folder picker ready",
+  "settings.phase4Title": "Workspace: local folder binding",
   "settings.phase4Body":
-    "Dashboard reads HANDOFF.md, AGENTS.md, and Git read-only; Skills scans local SKILL.md; Agents maps AGENTS.md, each Cursor .mdc, and copilot-instructions.md to separate read-only Agents. Workspace stays fixed at E:\\SkillCopilot; the folder picker is not implemented.",
+    "Dashboard reads HANDOFF.md, AGENTS.md, and Git read-only; Skills scans workspace and user-level SKILL.md; Agents scans AGENTS.md, Cursor .mdc files, and copilot-instructions.md in the current workspace. The path is stored in localStorage (skillcopilot.workspaceRoot). No SQLite.",
   "settings.languageTitle": "Interface language",
   "settings.languageAria": "Interface language",
   "settings.languageHint":
@@ -401,11 +469,18 @@ export const en: Record<MessageKey, string> = {
   "settings.locale.zhTW": "繁體中文",
   "settings.workspace": "Workspace",
   "settings.currentPath": "Current path",
-  "settings.workspaceStatus":
-    "Status: fixed binding (Dashboard, Skills, and Agents read real files from this path)",
+  "settings.workspaceStatusBound":
+    "Bound: Dashboard / Skills / Agents read this path read-only (preference stored locally).",
+  "settings.workspaceStatusUnset":
+    "Unbound: choose a local project folder to start reading.",
   "settings.changeFolder": "Change folder",
+  "settings.selectFolder": "Select folder",
+  "settings.selectingFolder": "Selecting…",
+  "settings.forgetWorkspace": "Forget Workspace",
   "settings.pickerHint":
-    "Workspace picker is still unimplemented; path is fixed to E:\\SkillCopilot.",
+    "Use the system folder dialog to choose a Workspace. Canceling leaves the current binding unchanged.",
+  "settings.forgetHint":
+    "Clears the local preference only. It does not delete or modify any files in the selected folder.",
   "settings.dataSources": "Data sources",
   "settings.skillRootsHint":
     "Read-only local sources. User-level roots apply only to Skills; Agents scan only this workspace.",
@@ -428,7 +503,7 @@ export const en: Record<MessageKey, string> = {
   "settings.gate.2": "Phase 2: read local HANDOFF / AGENTS / Git status",
   "settings.gate.3": "Phase 3: scan Skills",
   "settings.gate.4": "Phase 4: manage Agents",
-  "settings.gate.5": "Phase 5: re-evaluate SQLite",
+  "settings.gate.5": "Phase 5: written evaluation (SQLite not introduced)",
   "settings.safety.1": "No cloud sync",
   "settings.safety.2": "No account",
   "settings.safety.3": "No database",
@@ -438,6 +513,14 @@ export const en: Record<MessageKey, string> = {
 export const zhTW: Record<MessageKey, string> = {
   "toast.copied": "已複製",
   "toast.copyFailed": "複製失敗，請手動選取文字",
+  "toast.workspaceSwitched": "Workspace 已切換",
+  "toast.workspaceSwitchedUnsaved":
+    "已切換，但無法儲存；重新啟動後需要重新選擇。",
+  "toast.workspaceCleared": "Workspace 已清除",
+  "toast.workspaceClearFailed": "無法清除已儲存的 Workspace",
+  "toast.workspacePickFailed": "選擇資料夾失敗",
+  "toast.workspacePickUnavailable":
+    "請在桌面應用程式中選擇資料夾（瀏覽器預覽不支援原生對話框）",
 
   "sidebar.navAria": "主導覽",
   "sidebar.pagesAria": "頁面",
@@ -446,21 +529,31 @@ export const zhTW: Record<MessageKey, string> = {
   "sidebar.nav.dashboardHint": "專案狀態",
   "sidebar.nav.skills": "技能",
   "sidebar.nav.skillsHint": "可重用提示詞",
-  "sidebar.nav.agents": "智能體",
+  "sidebar.nav.agents": "智慧體",
   "sidebar.nav.agentsHint": "角色提示詞",
   "sidebar.nav.settings": "設定",
   "sidebar.nav.settingsHint": "本機資料來源",
-  "sidebar.statusChip": "Phase 4 · 本機資料",
+  "sidebar.statusChip": "Workspace · 本機偏好",
   "sidebar.noDatabase": "未掛載資料庫",
+  "sidebar.workspaceUnset": "未選擇工作區",
+  "sidebar.branchPlaceholder": "—",
 
   "common.workspace": "工作區",
   "common.source": "來源",
   "common.loading": "載入中…",
   "common.refresh": "重新整理",
   "common.real": "真實",
-  "common.planned": "規劃中",
+  "common.planned": "計畫中",
   "common.realLocalData": "真實本機資料",
-  "common.fallbackMockData": "備援模擬資料",
+  "common.fallbackMockData": "回退模擬資料",
+  "common.selectFolder": "選擇資料夾",
+  "common.changeFolder": "變更資料夾",
+  "common.selectingFolder": "正在選擇…",
+  "common.forgetWorkspace": "忘記 Workspace",
+  "common.needWorkspace": "請先選擇 Workspace",
+  "common.workspaceReadonlyHint":
+    "選擇後將唯讀檢查專案狀態、Skills 與 Agents。",
+  "common.currentWorkspace": "目前 Workspace",
 
   "phase.status.done": "已完成",
   "phase.status.in_progress": "進行中",
@@ -474,18 +567,22 @@ export const zhTW: Record<MessageKey, string> = {
   "phase.summary.2": "唯讀 HANDOFF / AGENTS / git status",
   "phase.summary.3": "掃描本機 Skills",
   "phase.summary.4": "管理 Agents 與複製提示詞",
-  "phase.summary.5": "再評估是否引入 SQLite",
+  "phase.summary.5": "書面評估：目前不引入 SQLite",
 
   "dashboard.title": "儀表板",
-  "dashboard.subtitle": "檢視目前專案狀態、交接約束與下一步。",
-  "dashboard.loadingBadge": "正在讀取本機狀態…",
+  "dashboard.subtitle": "查看目前專案狀態、交接約束與下一步。",
+  "dashboard.loadingBadge": "讀取本機狀態中…",
   "dashboard.updatedAt": "更新於 {time}",
-  "dashboard.fallbackTitle": "無法讀取真實本機狀態，已改用模擬資料",
+  "dashboard.fallbackTitle": "無法讀取真實本機狀態，已回退到模擬資料",
   "dashboard.fallbackBody":
-    "呼叫 Tauri command 失敗（在純瀏覽器 Vite 環境下沒有 Tauri 執行階段屬正常）。",
+    "呼叫 Tauri command 失敗（在純瀏覽器 Vite 環境下無 Tauri 執行階段屬正常）。",
+  "dashboard.noWorkspaceBadge": "未選擇工作區",
+  "dashboard.noWorkspaceTitle": "尚未選擇 Workspace",
+  "dashboard.noWorkspaceBody":
+    "選擇本機專案資料夾後，將唯讀檢查 HANDOFF、Git、Skills 與 Agents。不會寫入該目錄。",
   "dashboard.statsAria": "狀態摘要",
   "dashboard.gitStatus": "Git 狀態",
-  "dashboard.gitUnavailable": "Git 無法使用",
+  "dashboard.gitUnavailable": "Git 不可用",
   "dashboard.gitStatusMissing": "無法取得 git 狀態",
   "dashboard.unknownBranch": "(未知分支)",
   "dashboard.workingTreeClean": "工作區乾淨",
@@ -494,7 +591,7 @@ export const zhTW: Record<MessageKey, string> = {
   "dashboard.dataSourceLive": "真實本機檔案",
   "dashboard.dataSourceMock": "模擬資料",
   "dashboard.dataSourceMetaLive": "HANDOFF {handoff} · AGENTS {agents}",
-  "dashboard.dataSourceMetaFallback": "未接真實檔案（備援）",
+  "dashboard.dataSourceMetaFallback": "未接真實檔案（回退）",
   "dashboard.fileRead": "已讀取",
   "dashboard.fileMissing": "缺失",
   "dashboard.currentGoal": "目前目標",
@@ -502,44 +599,46 @@ export const zhTW: Record<MessageKey, string> = {
   "dashboard.copyNextStep": "複製下一步",
   "dashboard.sourcePrefix": "來源：",
   "dashboard.constraints": "約束",
-  "dashboard.phaseTimeline": "階段時間軸",
-  "dashboard.mockGitSummary": "main · 已同步",
-  "dashboard.mockWorkingTree": "工作區乾淨",
-  "dashboard.mockPhaseLabel": "MVP Phase 4 已完成",
-  "dashboard.mockPhaseFocus": "本機 Skill / Agent 掃描 · 真實資料",
+  "dashboard.phaseTimeline": "階段時間線",
+  "dashboard.mockGitSummary": "（模擬）",
+  "dashboard.mockWorkingTree": "模擬工作樹狀態",
+  "dashboard.mockPhaseLabel": "MVP Workspace 綁定",
+  "dashboard.mockPhaseFocus": "資料夾選擇 · localStorage 偏好",
   "dashboard.mockCurrentGoal": "本機桌面 AI 專案主腦 + Skill / Agent 管理器",
   "dashboard.mockNextStep":
-    "Phase 5：以書面評估是否需要 SQLite；結論前不得引入資料庫。",
+    "完成 MVP 回歸、安裝包驗證與發布準備（仍不引入 SQLite）。",
   "dashboard.mockNextStepSource":
-    "HANDOFF.md / docs/product/mvp-definition.md（模擬）",
+    "HANDOFF.md / docs/product/mvp-definition.md（模擬回退）",
   "dashboard.mockConstraint.1": "不新增 SQLite",
   "dashboard.mockConstraint.2": "不實作聊天 UI",
   "dashboard.mockConstraint.3": "不接雲端同步",
   "dashboard.mockConstraint.4": "不自動 commit / push 業務程式碼",
-  "dashboard.mockUpdated": "模擬時間戳記",
+  "dashboard.mockUpdated": "模擬時間戳",
+  "dashboard.mockName": "模擬工作區",
+  "dashboard.mockPath": "(mock-fallback)",
 
   "skills.title": "技能",
-  "skills.subtitle": "掃描本機 SKILL.md，檢視觸發情境與唯讀正文。",
+  "skills.subtitle": "掃描本機 SKILL.md，查看觸發場景與唯讀正文。",
   "skills.loadingBadge": "正在載入本機技能",
   "skills.realBadge": "真實本機資料 · {count} 個技能",
-  "skills.fallbackBadge": "備援模擬資料 · {count} 個技能",
-  "skills.fallbackTitle": "無法掃描真實本機 Skill，已改用模擬資料",
+  "skills.fallbackBadge": "回退模擬資料 · {count} 個技能",
+  "skills.fallbackTitle": "無法掃描真實本機 Skill，已回退到模擬資料",
   "skills.fallbackBody":
-    "呼叫 Tauri command 失敗（在純瀏覽器 Vite 環境下沒有 Tauri 執行階段屬正常）。",
-  "skills.partialTitle": "掃描完成，但部分項目被略過",
-  "skills.partialBody": "{details}。仍展示真實本機資料，未改用模擬資料。",
-  "skills.failedRoots": "{count} 個掃描根無法使用",
-  "skills.warningCount": "{count} 則警告",
+    "呼叫 Tauri command 失敗（在純瀏覽器 Vite 環境下無 Tauri 執行階段屬正常）。",
+  "skills.partialTitle": "掃描完成，但部分項目被跳過",
+  "skills.partialBody": "{details}。仍展示真實本機資料，未回退模擬資料。",
+  "skills.failedRoots": "{count} 個掃描根不可用",
+  "skills.warningCount": "{count} 條警告",
   "skills.truncatedCap": "已達到 500 條 Skill 上限",
-  "skills.remainingWarnings": "另有 {count} 則警告未展開。",
-  "skills.warningsTruncated": "詳細警告僅保留前 100 則。",
+  "skills.remainingWarnings": "另有 {count} 條警告未展開。",
+  "skills.warningsTruncated": "詳細警告僅保留前 100 條。",
   "skills.searchSr": "搜尋技能",
   "skills.searchPlaceholder": "搜尋名稱、描述、觸發或路徑…",
   "skills.searchAria": "搜尋技能",
   "skills.listAria": "技能列表",
   "skills.emptyScan": "未在預設掃描目錄中找到 SKILL.md。",
   "skills.emptySearch": "沒有符合的技能。",
-  "skills.selectHint": "選擇一個技能檢視詳情。",
+  "skills.selectHint": "選擇一個技能查看詳情。",
   "skills.inspectorAria": "技能詳情",
   "skills.tagLocal": "本機",
   "skills.absolutePath": "絕對路徑",
@@ -552,32 +651,36 @@ export const zhTW: Record<MessageKey, string> = {
   "skills.copyBody": "複製正文",
   "skills.refreshing": "掃描中…",
   "skills.refresh": "重新整理",
+  "skills.noWorkspaceBadge": "未選擇工作區",
+  "skills.noWorkspaceTitle": "請先選擇 Workspace",
+  "skills.noWorkspaceBody":
+    "選擇本機專案資料夾後，將掃描該工作區與使用者級 Skill 根中的 SKILL.md。",
 
-  "agents.title": "智能體",
-  "agents.subtitle": "掃描工作區 Agent 設定，檢視並複製完整原文提示詞。",
-  "agents.mockBadge": "模擬 · {count} 個智能體",
+  "agents.title": "智慧體",
+  "agents.subtitle": "掃描工作區 Agent 設定，查看並複製完整原文提示詞。",
+  "agents.mockBadge": "模擬 · {count} 個智慧體",
   "agents.loadingBadge": "正在載入本機 Agent",
   "agents.realBadge": "真實本機資料 · {count} 個 Agent",
-  "agents.fallbackBadge": "備援模擬資料 · {count} 個 Agent",
-  "agents.fallbackTitle": "無法掃描真實 Agent 設定，已改用模擬資料",
+  "agents.fallbackBadge": "回退模擬資料 · {count} 個 Agent",
+  "agents.fallbackTitle": "無法掃描真實 Agent 設定，已回退到模擬資料",
   "agents.fallbackBody":
-    "呼叫 Tauri command 失敗（在純瀏覽器 Vite 環境下沒有 Tauri 執行階段屬正常）。",
-  "agents.partialTitle": "掃描完成，但部分 Agent 來源被略過",
-  "agents.partialBody": "{details}。仍展示真實本機資料，未改用模擬資料。",
-  "agents.failedSources": "{count} 個來源無法使用",
-  "agents.warningCount": "{count} 則警告",
+    "呼叫 Tauri command 失敗（在純瀏覽器 Vite 環境下無 Tauri 執行階段屬正常）。",
+  "agents.partialTitle": "掃描完成，但部分 Agent 來源被跳過",
+  "agents.partialBody": "{details}。仍展示真實本機資料，未回退模擬資料。",
+  "agents.failedSources": "{count} 個來源不可用",
+  "agents.warningCount": "{count} 條警告",
   "agents.truncatedCap": "已達到 200 條 Agent 上限",
-  "agents.remainingWarnings": "另有 {count} 則警告未展開。",
-  "agents.warningsTruncated": "詳細警告僅保留前 100 則。",
-  "agents.searchSr": "搜尋智能體",
+  "agents.remainingWarnings": "另有 {count} 條警告未展開。",
+  "agents.warningsTruncated": "詳細警告僅保留前 100 條。",
+  "agents.searchSr": "搜尋智慧體",
   "agents.searchPlaceholder": "搜尋名稱、職責、來源、路徑或提示詞…",
-  "agents.searchAria": "搜尋智能體",
-  "agents.listAria": "智能體列表",
+  "agents.searchAria": "搜尋智慧體",
+  "agents.listAria": "智慧體列表",
   "agents.loadingList": "正在掃描 Agent 設定…",
   "agents.emptyScan": "未在工作區約定來源中找到 Agent 設定。",
-  "agents.emptySearch": "沒有符合的智能體。",
+  "agents.emptySearch": "沒有符合的智慧體。",
   "agents.sourcePrefix": "來源：",
-  "agents.inspectorAria": "智能體詳情",
+  "agents.inspectorAria": "智慧體詳情",
   "agents.role": "職責",
   "agents.source": "來源",
   "agents.sourceKind": "來源類型",
@@ -595,15 +698,18 @@ export const zhTW: Record<MessageKey, string> = {
   "agents.copyPrompt": "複製提示詞",
   "agents.refreshing": "掃描中…",
   "agents.refresh": "重新整理",
-  "agents.selectHint": "選擇一個智能體檢視詳情。",
+  "agents.selectHint": "選擇一個智慧體查看詳情。",
+  "agents.noWorkspaceBadge": "未選擇工作區",
+  "agents.noWorkspaceTitle": "請先選擇 Workspace",
+  "agents.noWorkspaceBody":
+    "選擇本機專案資料夾後，將掃描該工作區的 Agent 設定檔。",
 
   "settings.title": "設定",
-  "settings.subtitle":
-    "本機資料來源與階段門禁說明（Phase 4 已唯讀掃描 Skills 與 Agents）。",
-  "settings.pickerBadge": "工作區選擇器尚未實作",
-  "settings.phase4Title": "Phase 4：已接入真實本機 Agent 設定掃描",
+  "settings.subtitle": "綁定本機 Workspace，並說明唯讀資料來源與階段門禁。",
+  "settings.pickerBadge": "可選擇本機資料夾",
+  "settings.phase4Title": "Workspace：本機資料夾綁定",
   "settings.phase4Body":
-    "儀表板唯讀讀取 HANDOFF.md、AGENTS.md 與 Git；Skills 掃描本機 SKILL.md；Agents 將 AGENTS.md、每個 Cursor .mdc 與 copilot-instructions.md 分別映射為唯讀 Agent。工作區仍固定為 E:\\SkillCopilot，資料夾選擇器尚未實作。",
+    "儀表板唯讀讀取 HANDOFF.md、AGENTS.md 與 Git；Skills 掃描工作區與使用者級 SKILL.md；Agents 掃描目前工作區的 AGENTS.md、Cursor .mdc 與 copilot-instructions.md。路徑保存在 localStorage（skillcopilot.workspaceRoot），不使用 SQLite。",
   "settings.languageTitle": "介面語言",
   "settings.languageAria": "介面語言",
   "settings.languageHint":
@@ -613,18 +719,23 @@ export const zhTW: Record<MessageKey, string> = {
   "settings.locale.zhTW": "繁體中文",
   "settings.workspace": "工作區",
   "settings.currentPath": "目前路徑",
-  "settings.workspaceStatus":
-    "狀態：固定綁定（儀表板、技能與智能體頁已按此路徑讀取真實檔案）",
+  "settings.workspaceStatusBound":
+    "已綁定：Dashboard / Skills / Agents 將唯讀讀取此路徑（偏好保存在本機）。",
+  "settings.workspaceStatusUnset": "未綁定：選擇本機專案資料夾後開始讀取。",
   "settings.changeFolder": "變更資料夾",
+  "settings.selectFolder": "選擇資料夾",
+  "settings.selectingFolder": "正在選擇…",
+  "settings.forgetWorkspace": "忘記 Workspace",
   "settings.pickerHint":
-    "工作區選擇器仍未實作，目前固定為 E:\\SkillCopilot。",
+    "使用系統資料夾對話框選擇 Workspace。取消選擇不會改變目前綁定。",
+  "settings.forgetHint": "僅清除本機偏好，不會刪除或修改所選目錄中的任何檔案。",
   "settings.dataSources": "資料來源",
   "settings.skillRootsHint":
     "已接入的唯讀本機來源；使用者級來源僅用於 Skills，Agents 僅掃描目前工作區。",
   "settings.phaseGates": "階段門禁",
   "settings.safety": "安全邊界",
   "settings.status.real": "真實",
-  "settings.status.planned": "規劃中",
+  "settings.status.planned": "計畫中",
 
   "settings.source.handoff": "專案交接狀態與下一步（Phase 2 已唯讀讀取）",
   "settings.source.agents": "Phase 2 狀態來源，同時映射為 Phase 4 Project Agent",
@@ -635,19 +746,22 @@ export const zhTW: Record<MessageKey, string> = {
   "settings.source.cursorUser": "使用者級 Skill 根：SKILL.md（Phase 3 已掃描）",
   "settings.source.cursorRules": "Cursor .mdc：每個檔案映射一條真實 Agent（Phase 4）",
   "settings.source.copilot": "GitHub Copilot 指令：映射一條真實 Agent（Phase 4）",
-  "settings.source.mvp": "MVP 產品定義（尚未在應用內解析）",
+  "settings.source.mvp": "MVP 產品定義（暫未在應用內解析）",
   "settings.gate.1": "Phase 1：使用模擬資料",
   "settings.gate.2": "Phase 2：讀取本機 HANDOFF / AGENTS / Git 狀態",
   "settings.gate.3": "Phase 3：掃描 Skills",
   "settings.gate.4": "Phase 4：管理 Agents",
-  "settings.gate.5": "Phase 5：再評估 SQLite",
+  "settings.gate.5": "Phase 5：書面評估（目前不引入 SQLite）",
   "settings.safety.1": "無雲端同步",
   "settings.safety.2": "無帳號",
   "settings.safety.3": "無資料庫",
   "settings.safety.4": "無自動 git 寫入",
 };
 
-export const catalogs: Record<import("./locale").Locale, Record<MessageKey, string>> = {
+export const catalogs: Record<
+  import("./locale").Locale,
+  Record<MessageKey, string>
+> = {
   "zh-CN": zhCN,
   en,
   "zh-TW": zhTW,

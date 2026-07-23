@@ -9,9 +9,9 @@ import type {
 
 export function createMockWorkspace(t: TranslateFn): WorkspaceInfo {
   return {
-    name: "SkillCopilot",
-    path: "E:\\SkillCopilot",
-    branch: "main",
+    name: t("dashboard.mockName"),
+    path: t("dashboard.mockPath"),
+    branch: "—",
     gitSummary: t("dashboard.mockGitSummary"),
     workingTree: t("dashboard.mockWorkingTree"),
     phaseLabel: t("dashboard.mockPhaseLabel"),
@@ -58,7 +58,7 @@ export function createMockPhases(t: TranslateFn): TaskPhase[] {
     {
       id: "p5",
       name: t("phase.name.5"),
-      status: "pending",
+      status: "done",
       summary: t("phase.summary.5"),
     },
   ];
@@ -286,8 +286,3 @@ export function createMockSafetyBoundaries(t: TranslateFn): string[] {
     t("settings.safety.4"),
   ];
 }
-
-/** Stable workspace path/name for wiring that must not depend on locale. */
-export const WORKSPACE_ROOT_PATH = "E:\\SkillCopilot";
-export const WORKSPACE_NAME = "SkillCopilot";
-export const WORKSPACE_BRANCH = "main";

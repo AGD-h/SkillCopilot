@@ -5,9 +5,10 @@
 - First target platform: Windows 10/11; keep configuration compatible with later macOS work.
 - Stack: Tauri 2, React, TypeScript, Rust, Vite, pnpm.
 - Phases 1–5 are complete. Phase 5 concluded that SQLite is **not** needed for the current MVP; see `docs/architecture/sqlite-evaluation.md`.
-- Next product gap: Workspace folder selection and lightweight persistence (remove the hardcoded `E:\SkillCopilot` root). Still do not introduce SQLite.
+- Workspace folder selection and localStorage persistence are implemented (official Tauri Dialog; key `skillcopilot.workspaceRoot`). No hardcoded runtime workspace path.
 - Dashboard shows local file text as-is: do not auto-translate `HANDOFF.md`, `AGENTS.md`, or Skill body content in the frontend.
 - MVP product definition is recorded at `docs/product/mvp-definition.md`.
+- Next: full MVP regression, installer verification, and release prep. Still do not introduce SQLite.
 
 ## Recommended Development Environment
 - Main development environment: Windows-native PowerShell/CMD.
@@ -49,6 +50,7 @@
 - Phase 3.5 implemented: trilingual UI (`zh-CN` / `en` / `zh-TW`) with localStorage persistence; no i18n library dependency.
 - Phase 4 implemented: Agents page reads workspace `AGENTS.md`, Cursor `.mdc` rules, and GitHub Copilot instructions as separate real, read-only Agent entries with complete copyable prompts.
 - Phase 5 complete: written SQLite evaluation concluded that SQLite is not needed now; source files remain authoritative; locale stays in localStorage; Workspace binding may use light persistence without a database.
+- Workspace picker implemented: official `tauri-plugin-dialog` + `@tauri-apps/plugin-dialog`, capability `dialog:allow-open`, path preference in localStorage key `skillcopilot.workspaceRoot`. Unselected startup is supported; no runtime hardcoding of `E:\SkillCopilot`.
 - SQLite has not been added and must not be added unless revisit triggers in `docs/architecture/sqlite-evaluation.md` are met.
 
 ## Scaffold Verification Evidence
@@ -196,19 +198,42 @@
 - Last Known Next Step points at Workspace picker persistence, not further SQLite work.
 - `pnpm build` / `pnpm tauri build` were not required (docs only); product `src` / `src-tauri` code was not modified.
 
+## Workspace Picker Implementation
+- Official Tauri 2 Dialog plugin only: Rust `tauri-plugin-dialog`, JS `@tauri-apps/plugin-dialog`, `open({ directory: true, multiple: false })`.
+- Capability permission narrowed to `dialog:allow-open` (not the full `dialog:default` set).
+- App-owned `workspaceRoot: string | null` initialized from localStorage key `skillcopilot.workspaceRoot` (trim; blank → null). No silent fallback to a fixed path.
+- Select: update in-session `workspaceRoot` always; toast “switched” only when `writeStoredWorkspaceRoot` returns true. If write fails, still use the path this session but toast that it could not be saved and must be reselected after restart.
+- Cancel: keep previous binding, no failure toast. Dialog failure: keep previous binding + global fail toast.
+- Forget: `clearStoredWorkspaceRoot` returns boolean; only clear UI state and toast “cleared” on success. On failure, keep current `workspaceRoot` and toast that the saved Workspace could not be cleared (avoids UI cleared + restart restore mismatch). Never touch user files.
+- Dialog array results accepted only when original length is exactly 1 and the sole element is a non-empty string.
+- Unselected: Dashboard/Skills/Agents do not call real read/scan APIs; show select-folder empty states. Selected: all three pages share the same root and reload on change with request-sequence guards; Skill/Agent query+selection clear on switch.
+- Browser `pnpm dev`: native dialog unavailable → translated toast; no fake selection; no `window.prompt`.
+- No SQLite / Store plugin / new state libraries.
+
+## Workspace Picker Verification
+- Pure logic checks (storage write/clear success+failure, dialog array length-strict interpret, long/CJK paths): passed via temporary out-of-repo Node script.
+- `pnpm build`: exited 0.
+- `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`: exited 0.
+- `cargo test --manifest-path src-tauri/Cargo.toml`: 70 passed, 0 failed.
+- `cargo check --manifest-path src-tauri/Cargo.toml`: exited 0.
+- `pnpm tauri info`: Dialog plugin 2.7.2 present; no SQLite.
+- `git diff --check`: exited 0.
+- `rg` confirms no `WORKSPACE_ROOT_PATH` / runtime `E:\SkillCopilot` under `src`, and no SQLite deps.
+- Browser DOM QA (temporary out-of-repo Playwright): first-run unset state; select button shows desktop-only toast; localStorage restore of Chinese path; locale switch keeps path; Settings forget clears key; `role="status"` ≤ 1; 800×600 / 1280×800 no settings-row overflow.
+- `pnpm tauri dev`: Vite ready on 1420; Rust `Finished dev`; `skillcopilot.exe` launched; log scan found no panic / invoke error. Native OS folder dialog click-through was NOT automated — remains a manual acceptance item (cancel / select `E:\SkillCopilot` / restart restore / forget).
+- Dev processes stopped after QA; port 1420 released.
+- Pre-push review fix: honesty for localStorage write/clear failures; stricter Dialog array acceptance; HANDOFF verification wording corrected after re-running `git diff --check`.
+
 ## Publishing State
 - License: MIT, recorded in `LICENSE`, `package.json`, and `src-tauri/Cargo.toml`.
 - Git repository initialized on branch `main` with the scaffold as the first commit.
 - Public repository: `https://github.com/AGD-h/SkillCopilot`, pushed via authenticated GitHub CLI.
 
 ## Pending Work
-- Phase 2 done: Tauri read-only access to `HANDOFF.md`, `AGENTS.md`, and `git status` is implemented and Dashboard uses real data with mock fallback.
-- Phase 3 done: local `SKILL.md` scanning is implemented and the Skills page shows a real, searchable Skill list with read-only detail (mock fallback when the Tauri runtime is unavailable).
-- Phase 3.5 done: UI supports zh-CN / en / zh-TW with Settings language control and localStorage persistence; local file contents remain untranslated.
-- Phase 4 done: workspace Agent configuration files are scanned read-only and shown as one Agent per source file with complete copyable prompts.
-- Phase 5 done: written evaluation concluded SQLite is not needed for the current MVP (`docs/architecture/sqlite-evaluation.md`).
-- Next: implement Workspace folder selection and lightweight persistence; remove the hardcoded `E:\SkillCopilot` root. Still do not introduce SQLite.
-- Verify `pnpm tauri dev` renders the real Dashboard and Skills page in an actual window when a display is available (manual UI QA still pending).
+- Phase 2–5 done (including Phase 5 written SQLite evaluation).
+- Workspace folder selection + localStorage persistence done.
+- Next: complete MVP regression, installer verification, and release preparation. Still do not introduce SQLite.
+- Manual UI QA of native folder dialog cancel/select/forget/restart restore when a display is available.
 - For normal development, open a fresh PowerShell or Cursor terminal so the Rust PATH is loaded.
 
 ## Temporary Validation Project
@@ -230,7 +255,7 @@
 - If an installer requires administrator permission, a graphical installer, or a reboot, pause and give manual instructions.
 
 ## Last Known Next Step
-- 完成 MVP 剩余缺口：实现 Workspace 文件夹选择与持久化，移除 E:\SkillCopilot 硬编码；仍不引入 SQLite。
+- 完整 MVP 回归、安装包验证与发布准备；仍不引入 SQLite。
 
 ## Verified Tool Versions
 - Windows: Windows 11/10.0.26200 x64.

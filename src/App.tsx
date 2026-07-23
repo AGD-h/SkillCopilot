@@ -5,9 +5,6 @@ import { SettingsPage } from "./components/SettingsPage";
 import { Sidebar } from "./components/Sidebar";
 import { SkillsPage } from "./components/SkillsPage";
 import {
-  WORKSPACE_BRANCH,
-  WORKSPACE_NAME,
-  WORKSPACE_ROOT_PATH,
   createMockDataSources,
   createMockPhaseGates,
   createMockPhases,
@@ -16,6 +13,13 @@ import {
 } from "./data/mock";
 import { useI18n } from "./i18n/I18nProvider";
 import { copyText } from "./lib/clipboard";
+import { pickWorkspaceDirectory } from "./lib/workspacePicker";
+import {
+  clearStoredWorkspaceRoot,
+  readStoredWorkspaceRoot,
+  workspaceDisplayName,
+  writeStoredWorkspaceRoot,
+} from "./lib/workspaceRoot";
 import type { PageId, ToastState } from "./types";
 import "./App.css";
 
@@ -32,7 +36,13 @@ function App() {
   const [agentQuery, setAgentQuery] = useState("");
   const [selectedSkillId, setSelectedSkillId] = useState("");
   const [skillQuery, setSkillQuery] = useState("");
+  const [workspaceRoot, setWorkspaceRoot] = useState<string | null>(() =>
+    readStoredWorkspaceRoot(),
+  );
+  const [sidebarBranch, setSidebarBranch] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
   const toastTimer = useRef<number | null>(null);
+  const pickingRef = useRef(false);
 
   const mockWorkspace = useMemo(() => createMockWorkspace(t), [t]);
   const mockPhases = useMemo(() => createMockPhases(t), [t]);
@@ -62,7 +72,8 @@ function App() {
   }, []);
 
   // Clear an in-flight toast when the locale changes so old-language text
-  // does not briefly mix with the new UI. Does not touch visitedPages.
+  // does not briefly mix with the new UI. Does not touch visitedPages or
+  // workspaceRoot — locale must not rescan.
   useEffect(() => {
     if (toastTimer.current !== null) {
       window.clearTimeout(toastTimer.current);
@@ -70,6 +81,16 @@ function App() {
     }
     setToast(null);
   }, [locale]);
+
+  // Switching workspace clears cross-page search/selection and sidebar branch
+  // so an old project's UI state cannot leak into the new one.
+  useEffect(() => {
+    setSidebarBranch(null);
+    setSkillQuery("");
+    setSelectedSkillId("");
+    setAgentQuery("");
+    setSelectedAgentId("");
+  }, [workspaceRoot]);
 
   function showToast(next: ToastState) {
     if (toastTimer.current !== null) {
@@ -91,13 +112,74 @@ function App() {
     );
   }
 
+  const handlePickWorkspace = useCallback(async () => {
+    if (pickingRef.current) return;
+    pickingRef.current = true;
+    setPicking(true);
+    try {
+      const result = await pickWorkspaceDirectory();
+      if (result.kind === "cancel") {
+        return;
+      }
+      if (result.kind === "error") {
+        showToast({
+          message:
+            result.reason === "unavailable"
+              ? t("toast.workspacePickUnavailable")
+              : t("toast.workspacePickFailed"),
+          kind: "fail",
+        });
+        return;
+      }
+      const persisted = writeStoredWorkspaceRoot(result.path);
+      setWorkspaceRoot(result.path);
+      showToast({
+        message: persisted
+          ? t("toast.workspaceSwitched")
+          : t("toast.workspaceSwitchedUnsaved"),
+        kind: persisted ? "ok" : "fail",
+      });
+    } finally {
+      pickingRef.current = false;
+      setPicking(false);
+    }
+  }, [t]);
+
+  const handleClearWorkspace = useCallback(() => {
+    const cleared = clearStoredWorkspaceRoot();
+    if (!cleared) {
+      showToast({
+        message: t("toast.workspaceClearFailed"),
+        kind: "fail",
+      });
+      return;
+    }
+    setWorkspaceRoot(null);
+    showToast({ message: t("toast.workspaceCleared"), kind: "ok" });
+  }, [t]);
+
+  const handleGitBranch = useCallback((branch: string | null) => {
+    setSidebarBranch(branch);
+  }, []);
+
+  const sidebarName = workspaceRoot
+    ? workspaceDisplayName(workspaceRoot)
+    : t("sidebar.workspaceUnset");
+  const sidebarBranchLabel = workspaceRoot
+    ? sidebarBranch || t("sidebar.branchPlaceholder")
+    : t("sidebar.branchPlaceholder");
+  const sidebarTitle = workspaceRoot
+    ? `${workspaceRoot} / ${sidebarBranchLabel}`
+    : `${t("sidebar.workspaceUnset")} / ${t("sidebar.branchPlaceholder")}`;
+
   return (
     <div className="app-shell">
       <Sidebar
         page={page}
         onNavigate={navigate}
-        workspaceName={WORKSPACE_NAME}
-        branch={WORKSPACE_BRANCH}
+        workspaceName={sidebarName}
+        branch={sidebarBranchLabel}
+        title={sidebarTitle}
       />
       <main className="app-main" id="main-content">
         {visitedPages.has("dashboard") ? (
@@ -109,8 +191,11 @@ function App() {
             <DashboardPage
               workspace={mockWorkspace}
               phases={mockPhases}
-              rootPath={WORKSPACE_ROOT_PATH}
+              rootPath={workspaceRoot}
               onCopyNextStep={handleCopy}
+              onPickWorkspace={handlePickWorkspace}
+              picking={picking}
+              onGitBranch={handleGitBranch}
               toast={toast}
             />
           </div>
@@ -122,12 +207,14 @@ function App() {
             aria-hidden={page !== "skills"}
           >
             <SkillsPage
-              rootPath={WORKSPACE_ROOT_PATH}
+              rootPath={workspaceRoot}
               query={skillQuery}
               onQueryChange={setSkillQuery}
               selectedId={selectedSkillId}
               onSelect={setSelectedSkillId}
               onCopy={handleCopy}
+              onPickWorkspace={handlePickWorkspace}
+              picking={picking}
               toast={toast}
             />
           </div>
@@ -139,12 +226,14 @@ function App() {
             aria-hidden={page !== "agents"}
           >
             <AgentsPage
-              rootPath={WORKSPACE_ROOT_PATH}
+              rootPath={workspaceRoot}
               query={agentQuery}
               onQueryChange={setAgentQuery}
               selectedId={selectedAgentId}
               onSelect={setSelectedAgentId}
               onCopy={handleCopy}
+              onPickWorkspace={handlePickWorkspace}
+              picking={picking}
               toast={toast}
             />
           </div>
@@ -156,10 +245,13 @@ function App() {
             aria-hidden={page !== "settings"}
           >
             <SettingsPage
-              workspace={mockWorkspace}
+              workspaceRoot={workspaceRoot}
               dataSources={mockDataSources}
               phaseGates={mockPhaseGates}
               safetyBoundaries={mockSafetyBoundaries}
+              picking={picking}
+              onPickWorkspace={handlePickWorkspace}
+              onClearWorkspace={handleClearWorkspace}
             />
           </div>
         ) : null}
