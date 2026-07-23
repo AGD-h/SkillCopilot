@@ -75,7 +75,14 @@
 - `cargo check` for `src-tauri` exited with code 0 (full Tauri app type-checked/compiled).
 - `git diff --check` exited with code 0 (only informational CRLF→LF normalization notices, per `.gitattributes`; no whitespace errors).
 - `pnpm tauri info` ran successfully (Tauri 2.11.5, WebView2 150.0.4078.83, rustc 1.97.1, React + Vite).
-- `pnpm tauri dev` was NOT run in this automated session (no reliable interactive display to visually confirm the window). Not confirmed: live GUI render / "not white screen" via an actual Tauri window. Rust compilation, frontend build, and invoke wiring were verified instead. No dev-server or GUI processes were left running.
+- `pnpm tauri dev` ran successfully in a later runtime acceptance session:
+  - Vite served `http://localhost:1420/` and returned HTTP 200 with page title `SkillCopilot`.
+  - The Rust dev profile compiled successfully (`Finished dev profile ... target(s)`).
+  - `skillcopilot.exe` launched and ran.
+  - WebView2 child processes were created under the dev process tree (6 processes), indicating the window's WebView rendered.
+  - Log scan found no panic, no `error`, no invoke error, and no frontend error.
+  - The dev process tree was then stopped; port 1420 was released; no residual dev/GUI processes remained.
+- Honest limitations of that session: automation cannot capture the native WebView2 window, so the `Real local data` badge/text and click-through across the four pages were NOT confirmed by pixel-level or interactive visual QA. This does not block Phase 2 code from shipping; it is retained as a follow-up manual UI QA item.
 
 ## Publishing State
 - License: MIT, recorded in `LICENSE`, `package.json`, and `src-tauri/Cargo.toml`.
